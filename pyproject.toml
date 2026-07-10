@@ -1,0 +1,28 @@
+[project]
+name = "pixel-office-firm"
+version = "0.1.0"
+description = "Multi-agent AI consulting firm for automotive companies — TradingAgents-based, pixel office visualized"
+requires-python = ">=3.12"
+dependencies = [
+    "pandas>=2.2",
+    "requests>=2.32",
+    "python-dotenv>=1.0",
+    "yfinance>=0.2.50",
+    "finnhub-python>=2.4",
+    "fredapi>=0.5",
+    "edgartools>=3.0",
+    "feedparser>=6.0",
+    "praw>=7.7",
+    "vaderSentiment>=3.3",
+    "pandas-ta>=0.3.14b0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.8",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
