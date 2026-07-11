@@ -1,13 +1,13 @@
-# Dataflows: one module per data source, each returning normalized dicts/DataFrames.
-# Contract (see CLAUDE.md): agents run these via bash/CLI, never call APIs directly.
-# API keys are loaded here (python-dotenv) and nowhere else.
+# Dataflows: one module per data source, unified CLI in __main__.py.
+# Agents run: uv run python -m dataflows <module> <command> [ticker]
+# See __main__.py docstring for the full command reference.
 #
-# v1 sources (build order):
-#   prices.py       — yfinance: OHLCV, fundamentals snapshots, analyst estimates
-#   finnhub_data.py — real-time quotes, company news, insider sentiment
-#   macro.py        — FRED: auto sales, production, inventories, rates, CPI
-#   filings.py      — SEC EDGAR: financials (XBRL), Form 4 insider transactions
-#   news.py         — Google News RSS per ticker/topic
-#   social.py       — Reddit via PRAW + VADER scoring
-#   recalls.py      — NHTSA recalls & complaints per make/model
-#   industry.py     — OICA + IEA static CSVs: production, sales, EV adoption
+# Modules:
+#   prices        yfinance — history/indicators, fundamentals, analyst (Tom, John)
+#   finnhub_data  Finnhub — quotes, company news, insider sentiment (Tom, John)
+#   macro         FRED — auto sales/production/inventories, rates (David)
+#   filings       SEC EDGAR — XBRL financials, Form 4 insiders (John)
+#   news          Google News RSS — company/topic/sector headlines (David)
+#   social        Reddit (PRAW or RSS fallback) + StockTwits + VADER (Amy)
+#   recalls       NHTSA — recalls & complaints per make (Hairy)
+#   industry      OICA production/sales + IEA EV adoption, static (Baldy/Hairy)

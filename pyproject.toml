@@ -8,14 +8,13 @@ dependencies = [
     "requests>=2.32",
     "python-dotenv>=1.0",
     "yfinance>=0.2.50",
-    "finnhub-python>=2.4",
-    "fredapi>=0.5",
     "edgartools>=3.0",
     "feedparser>=6.0",
     "praw>=7.7",
     "vaderSentiment>=3.3",
-    "pandas-ta>=0.3.14b0",
 ]
+# Note: Finnhub/FRED/StockTwits/NHTSA are called via `requests` directly (no SDK deps).
+# Technical indicators are computed with pandas in dataflows/prices.py (no pandas-ta).
 
 [dependency-groups]
 dev = [
