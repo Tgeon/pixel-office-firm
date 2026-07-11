@@ -46,7 +46,6 @@ def recalls(a) -> dict:
                             "Component": r.get("Component", ""),
                             "Summary": (r.get("Summary", "") or "")[:120],
                         })
-                        per_year[y] = per_year.get(y, 0) + 0  # counted below
             except Exception:  # noqa: BLE001 — keep sweeping other make/years
                 continue
 

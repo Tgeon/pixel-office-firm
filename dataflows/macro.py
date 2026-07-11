@@ -36,12 +36,24 @@ def _observations(series_id: str, limit: int = 30) -> list[dict]:
     return obs
 
 
+def _year_ago(obs: list[dict]) -> dict:
+    """First observation dated ~a year before the latest (works for daily
+    AND monthly series — index-based lookback breaks on daily data)."""
+    import datetime
+    latest = datetime.date.fromisoformat(obs[0]["date"])
+    target = latest - datetime.timedelta(days=350)
+    for o in obs:
+        if datetime.date.fromisoformat(o["date"]) <= target:
+            return o
+    return obs[-1]
+
+
 def snapshot(a) -> dict:
     rows, data = [], {}
     for sid, label in SERIES.items():
         try:
-            obs = _observations(sid, limit=14)
-            latest, year_ago = obs[0], (obs[12] if len(obs) > 12 else obs[-1])
+            obs = _observations(sid, limit=400)
+            latest, year_ago = obs[0], _year_ago(obs)
             cur, prev = float(latest["value"]), float(year_ago["value"])
             yoy = (cur / prev - 1) * 100 if prev else 0.0
             rows.append({"Series": label, "Latest": cur, "Date": latest["date"],

@@ -31,7 +31,12 @@ CASES = [
     ("industry-refresh", ["industry", "refresh"]),
     ("industry-production", ["industry", "production"]),
     ("industry-sales", ["industry", "sales"]),
+    ("industry-evs", ["industry", "evs"]),
     ("recalls", ["recalls", "recalls", "RIVN", "--years", "2"]),
+    ("recalls-complaints", ["recalls", "complaints", "LCID", "--years", "2"]),
+    ("finnhub-profile", ["finnhub", "profile", "XPEV"]),
+    ("news-topic", ["news", "topic", "--query", "EV battery supply chain"]),
+    ("social-pulse", ["social", "pulse", "RIVN"]),
 ]
 
 def main() -> int:

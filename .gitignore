@@ -1,9 +1,13 @@
 # Secrets
 .env
 
-# Data (cache + static datasets are regenerable)
-data/
+# Data (cache + static datasets are regenerable) — keep dir structure via .gitkeep
+data/*
+!data/cache/
+data/cache/*
 !data/cache/.gitkeep
+!data/static/
+data/static/*
 !data/static/.gitkeep
 
 # Python
@@ -11,6 +15,7 @@ __pycache__/
 *.pyc
 .venv/
 *.egg-info/
+.pytest_cache/
 
 # OS / editor
 .DS_Store
