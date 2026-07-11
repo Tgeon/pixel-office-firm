@@ -1,5 +1,18 @@
 # Pixel Office Firm — Project Context
 
+## Current status (updated 2026-07-11 by Cowork session)
+
+Build order: scaffold → dataflows → report contract → agents → digest → pixel office.
+
+- ✅ Step 1: repo scaffold, GitHub remote (Tgeon/pixel-office-firm), keys in .env (Finnhub, FRED; Reddit pending Data API approval — PRAW path is dormant in social.py until then)
+- ✅ Step 2: dataflows layer built — 8 modules, unified CLI, 12 mocked tests passing
+- 🔜 **Immediate next action:** run `uv sync && uv run python scripts/smoke_test.py` and fix any live-API failures (likely: edgartools API drift in filings.py, IEA CSV URL in industry.py, Reddit RSS blocks in social.py). All are designed to fail gracefully — fix, don't rewrite.
+- 🔜 Step 3: report contract — frontmatter schema + rating/confidence/disclaimer templates (spec in docs/pre-build-decisions.md §"report contract")
+- 🔜 Step 4: the 7 subagent definitions in .claude/agents/ (stubs described in .claude/agents/README.md)
+- 🔜 Step 5: daily digest script · Step 6: Pixel Agents extension setup
+
+Try the CLI: `uv run python -m dataflows finnhub quote TSLA` (full reference: `uv run python -m dataflows --help`)
+
 You are working inside a multi-agent "consulting firm" that analyzes automotive companies. Full spec lives in `docs/pre-build-decisions.md` (all decisions) and `docs/data-source-catalog.md` (data sources).
 
 ## Core rules
