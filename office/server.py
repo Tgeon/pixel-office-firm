@@ -187,6 +187,23 @@ def scoreboard():
     return out
 
 
+@app.get("/api/history")
+def history():
+    """All verdicts ever, newest first — feeds the whiteboard tally and corkboard."""
+    out = []
+    if REPORTS.exists():
+        for f in REPORTS.glob("*/*-verdict.md"):
+            m = re.match(r"(\d{4}-\d{2}-\d{2})-verdict", f.name)
+            s = re.search(r"^stance:\s*(\S+)", f.read_text(), re.MULTILINE)
+            if m and s:
+                out.append({"ticker": f.parent.name, "date": m.group(1),
+                            "tier": s.group(1)})
+    out.sort(key=lambda v: v["date"], reverse=True)
+    bulls = sum(1 for v in out if "positive" in v["tier"])
+    bears = sum(1 for v in out if "negative" in v["tier"])
+    return {"verdicts": out[:12], "bulls": bulls, "bears": bears}
+
+
 @app.get("/api/report/{ticker}/{agent}")
 def agent_report(ticker: str, agent: str):
     d = REPORTS / ticker.upper()

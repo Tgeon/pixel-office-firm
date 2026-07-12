@@ -156,7 +156,7 @@ window.addEventListener('resize',fit); setTimeout(fit,50);
 
 const DESK={ tom:[135,190], john:[135,388], david:[365,190], amy:[365,388],
              baldy:[672,170], hairy:[898,170], theo:[785,455] };
-const COFFEE=[498,478], COOLER=[620,300];
+const COFFEE=[498,540], COFFEE_M=[498,492], COOLER=[620,300];
 const AGENTS={
   tom:  {c:'#5bc0eb',role:'TECHNICALS'},  john: {c:'#8ee06e',role:'FUNDAMENTALS'},
   david:{c:'#f2d052',role:'NEWS & MACRO'},amy:  {c:'#d977d9',role:'SENTIMENT'},
@@ -170,15 +170,29 @@ const screens={ chart:null, headlines:[], sentiment:null, recalls:null, quote:nu
 const AMBIENT=["coffee run ☕","stretching...","market's quiet...","checking the tape",
   "watering the plant","thinking about margins","refilling the mug","door's squeaky again"];
 
+/* doorways: D1 connects analyst floor ↔ debate room, D2 debate ↔ client room */
+const D1=[546,205], D2=[775,322];
+function room(x,y){ if(x<546) return 'floor'; return y<322?'debate':'client'; }
+function route(from,to){                          // waypoints through doors
+  const a=room(...from), b=room(...to);
+  if(a===b) return [to];
+  if(a==='floor')  return b==='debate' ? [[532,205],[566,205],to]
+                                       : [[532,205],[566,205],[775,300],[775,344],to];
+  if(b==='floor')  return a==='debate' ? [[566,205],[532,205],to]
+                                       : [[775,344],[775,300],[566,205],[532,205],to];
+  return a==='debate' ? [[775,300],[775,344],to] : [[775,344],[775,300],to];
+}
+function pathTo(n,...pts){ const a=AGENTS[n]; a.path=[];
+  let cur=[a.x,a.y];
+  for(const p of pts){ a.path.push(...route(cur,p)); cur=p; } }
 /* choreography: state event -> optional walk before settling at desk */
 function choreo(n, st){
-  const a=AGENTS[n];
   if(st==='start'){
-    if(n==='baldy'||n==='hairy') a.path=[DESK.tom,DESK.amy,DESK[n]];       // read analyst desks
-    else if(n==='theo') a.path=[DESK.baldy,DESK.hairy,DESK.theo];          // collect the debate
-    else a.path=[[a.x,a.y]];
+    if(n==='baldy'||n==='hairy') pathTo(n,DESK.tom,DESK.amy,DESK[n]);      // read analyst desks
+    else if(n==='theo') pathTo(n,DESK.baldy,DESK.hairy,DESK.theo);         // collect the debate
+    else pathTo(n,DESK[n]);
   }
-  if(st==='done') a.path=[COFFEE,DESK[n]];                                  // victory coffee
+  if(st==='done') pathTo(n,COFFEE,DESK[n]);                                 // victory coffee
 }
 function stepWalks(){
   for(const n in AGENTS){ const a=AGENTS[n];
@@ -192,7 +206,7 @@ setInterval(()=>{ for(const n in AGENTS) AGENTS[n].walking=false; stepWalks(); }
 setInterval(()=>{ if(runTicker) return;
   const names=Object.keys(AGENTS), n=names[Math.floor(Math.random()*names.length)];
   const a=AGENTS[n]; if(a.path.length) return;
-  a.path=[Math.random()<0.5?COFFEE:COOLER, DESK[n]];
+  pathTo(n, Math.random()<0.5?COFFEE:COOLER, DESK[n]);
   a.note=AMBIENT[Math.floor(Math.random()*AMBIENT.length)]; a.ts=Date.now()/1000;
 }, 22000);
 
@@ -245,6 +259,52 @@ function drawWindow(x,w){ const p=skyPalette(), y=55, h=18;
       cx.fillRect(bx+1,y+h-bh+2,1,1); cx.fillRect(bx+2,y+h-bh+5,1,1);
       cx.fillStyle='#05050f'; } });
   rect(x+w/2-1,y,2,h,'#3d2c1c');                        // mullion
+}
+let HIST={verdicts:[],bulls:0,bears:0};
+async function loadHistory(){ try{ const r=await fetch('/api/history');
+  if(r.ok) HIST=await r.json(); }catch{} }
+loadHistory();
+const TIERC2={strong_positive:'#2e9e5b',positive:'#46c47c',neutral:'#e2bd6b',
+              negative:'#e05a5a',strong_negative:'#b03030'};
+function whiteboard(x,y){                       // real bulls-vs-bears tally
+  rect(x-2,y-2,104,64,'#8a6b45'); rect(x,y,100,60,'#f2efe4');
+  cx.font='7px '+F_PX; cx.textAlign='left';
+  cx.fillStyle='#2e7d4f'; cx.fillText('BULLS',x+6,y+14);
+  cx.fillStyle='#a33'; cx.fillText('BEARS',x+6,y+40);
+  const tally=(count,ty,c)=>{ cx.strokeStyle=c; cx.lineWidth=2;
+    for(let i=0;i<Math.min(count,12);i++){ const gx=x+52+(i%6)*7, gy=ty+((i>5)?12:0);
+      cx.beginPath(); cx.moveTo(gx,gy); cx.lineTo(gx,gy+9); cx.stroke(); } };
+  tally(HIST.bulls,y+6,'#2e7d4f'); tally(HIST.bears,y+32,'#a33');
+}
+function corkboard(x,y){                        // last 5 verdict cards
+  rect(x-3,y-3,116,56,'#6d4a29'); rect(x,y,110,50,'#b98d5e');
+  const vs=HIST.verdicts.slice(0,5);
+  cx.font='5px '+F_PX; cx.textAlign='left';
+  vs.forEach((v,i)=>{ const cxp=x+6+i*21, cyp=y+8+(i%2)*20;
+    rect(cxp,cyp,18,16,'#fffef0'); rect(cxp,cyp,18,4,TIERC2[v.tier]||'#777');
+    rect(cxp+8,cyp-1,2,2,'#c33');
+    cx.fillStyle='#222'; cx.fillText(v.ticker.slice(0,4),cxp+1,cyp+12); });
+  if(!vs.length){ cx.fillStyle='#7a5c3a'; cx.font='6px '+F_PX;
+    cx.fillText('NO VERDICTS',x+14,y+28); }
+}
+function poster(x,y){                           // framed pixel car
+  rect(x-2,y-2,52,40,'#8a6b45'); rect(x,y,48,36,'#1c2438');
+  rect(x+8,y+16,32,10,'#c9403f'); rect(x+14,y+10,18,8,'#e8dede');
+  rect(x+12,y+24,7,6,'#222'); rect(x+30,y+24,7,6,'#222');
+  rect(x+13,y+25,3,3,'#888'); rect(x+31,y+25,3,3,'#888');
+}
+function certificate(x,y){
+  rect(x-2,y-2,40,50,'#8a6b45'); rect(x,y,36,46,'#f2efe4');
+  cx.fillStyle='#99a'; for(let i=0;i<5;i++) cx.fillRect(x+5,y+7+i*6,26,2);
+  rect(x+13,y+37,9,6,'#e2bd6b');
+}
+function breakroom(){                           // counter, fridge, snacks, table
+  rect(444,496,96,8,'#6d4a29'); rect(444,504,96,26,'#54381e');   // counter
+  rect(450,470,18,30,'#c8ccd8'); rect(452,474,14,10,'#9aa0b0');  // fridge
+  rect(452,486,14,2,'#9aa0b0');
+  rect(516,470,20,14,'#6d4a29');                                  // snack shelf
+  rect(518,472,5,8,'#d9a24a'); rect(525,472,5,8,'#b0559a'); rect(531,472,4,8,'#5b8ac4');
+  shadow(480,552,16,5); rect(468,536,26,14,'#6d4a29');            // table
 }
 const PROPS={
   tom(x,y){ rect(x+52,y-50,20,16,'#cfd6e4'); rect(x+54,y-48,16,11,'#12333f');
@@ -327,6 +387,12 @@ function drawFloor(){
   cx.fillStyle='#755f9c'; cx.beginPath(); cx.ellipse(785,468,120,44,0,0,7); cx.fill();
   cx.strokeStyle='#100c1c'; cx.lineWidth=6;
   [[16,52,520,492],[556,52,408,262],[556,330,408,214]].forEach(r=>cx.strokeRect(...r));
+  // doorways cut through the walls (drawn as floor-toned gaps + frames)
+  rect(533,188,26,34,'#7f6a58'); rect(533,186,26,3,'#3d2c1c'); rect(533,220,26,3,'#3d2c1c');
+  rect(760,311,30,26,'#5e548a'); rect(758,311,3,26,'#2e2342'); rect(789,311,3,26,'#2e2342');
+  // night: dim the rooms so the lamps carry the scene
+  if(skyPalette().night){ cx.fillStyle='rgba(10,8,26,.30)';
+    cx.fillRect(16,52,520,492); cx.fillRect(556,52,408,262); cx.fillRect(556,330,408,214); }
   cx.fillStyle='#e2bd6b'; cx.font='8px '+F_PX; cx.textAlign='left';
   cx.fillText('ANALYST FLOOR',186,50); cx.fillText('RESEARCH DEBATE',570,69);
   cx.fillText('CLIENT ROOM',570,347);
@@ -339,13 +405,16 @@ function drawFloor(){
   cx.fillStyle='#6b4b2a'; cx.beginPath(); cx.ellipse(785,205,92,40,0,0,7); cx.fill();
   cx.fillStyle='#54381e'; cx.beginPath(); cx.ellipse(785,200,92,40,0,0,7); cx.fill();
   rect(748,190,26,16,'#fffef0'); rect(796,196,26,16,'#fffef0');
-  shadow(34,84,12,4); shadow(514,542,12,4); shadow(574,312,12,4); shadow(940,532,12,4);
-  plant(26,58); plant(506,516); plant(566,286); plant(932,506);
-  shadow(COFFEE[0],COFFEE[1]+6,14,4); shadow(COOLER[0],COOLER[1]+6,11,4);
-  coffeeMachine(COFFEE[0],COFFEE[1]); cooler(COOLER[0],COOLER[1]);
-  // warm lamp pools over the desks
-  for(const n in DESK) lightPool(DESK[n][0],DESK[n][1]-10,68);
-  lightPool(785,205,90);
+  shadow(34,84,12,4); shadow(574,312,12,4); shadow(940,532,12,4);
+  plant(26,58); plant(566,286); plant(932,506);
+  breakroom();
+  shadow(COOLER[0],COOLER[1]+6,11,4);
+  coffeeMachine(COFFEE_M[0],COFFEE_M[1]); cooler(COOLER[0],COOLER[1]);
+  corkboard(34,96); poster(160,96); whiteboard(584,110); certificate(920,362);
+  // warm lamp pools over the desks (stronger after dark)
+  const nite=skyPalette().night;
+  for(const n in DESK) lightPool(DESK[n][0],DESK[n][1]-10,nite?80:68);
+  lightPool(785,205,nite?104:90); lightPool(492,500,60);
 }
 function drawDesk(x,y,busy){
   shadow(x,y-20,52,8);
@@ -376,7 +445,18 @@ function drawAgent(n){
   cx.restore();
   if(busy&&!away){ const h=Math.sin(Date.now()/120)>0?2:-2;   // typing hands
     rect(a.x-17,a.y-2+h,5,4,'#eec3a0'); rect(a.x+12,a.y-2-h,5,4,'#eec3a0'); }
-  if(a.mode==='done'){ cx.fillStyle='#4caf6e'; cx.font='bold 14px Courier New';
+  // blink (per-agent offset), stretch when idle
+  if(((Math.floor(Date.now()/150)+SPRITE_COL[n]*7)%28)===0)
+    rect(a.x-6,a.y-23+bob,12,4,'#eec3a0');
+  if(a.mode==='idle'&&!a.walking&&((Math.floor(Date.now()/1000)+SPRITE_COL[n]*5)%37)<2){
+    rect(a.x-15,a.y-40,5,12,'#eec3a0'); rect(a.x+10,a.y-40,5,12,'#eec3a0'); }
+  // debate reaction chip
+  if(a.react&&Date.now()/1000-a.react.ts<2.5){
+    rect(a.x+16,a.y-46,16,14,'#fffef0');
+    cx.strokeStyle='#222'; cx.lineWidth=2; cx.strokeRect(a.x+16,a.y-46,16,14);
+    cx.fillStyle=a.react.c; cx.font='9px '+F_MONO; cx.textAlign='center';
+    cx.fillText(a.react.sym,a.x+24,a.y-35); }
+  if(a.mode==='done'){ cx.fillStyle='#46c47c'; cx.font='bold 14px Courier New';
     cx.textAlign='center'; cx.fillText('✓',a.x+24,a.y-24); }
   cx.textAlign='center'; cx.font='8px '+F_PX;
   cx.fillStyle='#fff'; cx.fillText(n.toUpperCase(),a.x,a.y+27);
@@ -452,7 +532,8 @@ es.onmessage=(m)=>{ let e; try{ e=JSON.parse(m.data);}catch{return;}
     if(e.state==='run_done'||e.state==='error'){ setBusy(false);
       statusEl.textContent=e.state==='run_done'?'run complete':'run failed';
       if(e.state==='run_done'){ if(e.ticker==='DIGEST') loadDigest();
-        else { showVerdict(e.ticker); loadScore(); toast('✓ '+e.ticker+' verdict is in', true); } }
+        else { showVerdict(e.ticker); loadScore(); loadHistory();
+               toast('✓ '+e.ticker+' verdict is in', true); } }
       runTicker=null; stageIdx=-1; renderStages(); }
     return; }
   if(!(e.agent in AGENTS)) return;
@@ -464,6 +545,9 @@ es.onmessage=(m)=>{ let e; try{ e=JSON.parse(m.data);}catch{return;}
     if(p.kind==='sentiment') screens.sentiment=p.value;
     if(p.kind==='quote') screens.quote=p.value;
     return; }
+  if(e.state==='find'){                          // rival reacts at the table
+    if(e.agent==='baldy'&&AGENTS.hairy) AGENTS.hairy.react={sym:'?!',c:'#a33',ts:e.ts};
+    if(e.agent==='hairy'&&AGENTS.baldy) AGENTS.baldy.react={sym:'!',c:'#2e7d4f',ts:e.ts}; }
   const mode={start:'work',work:'work',find:'work',write:'write',done:'done',error:'idle'}[e.state]||'idle';
   if(e.state==='start'){ a.startTs=e.ts; choreo(e.agent,'start');
     if(e.agent==='baldy') setStage(hairyDone?3:1);
