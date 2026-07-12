@@ -187,6 +187,21 @@ def scoreboard():
     return out
 
 
+@app.post("/api/snapshot/{name}")
+async def snapshot(name: str, body: dict):
+    """Dev helper: the page POSTs a canvas/page dataURL; we save it to docs/media."""
+    import base64
+    if not re.fullmatch(r"[a-z0-9_-]{1,40}", name):
+        return JSONResponse({"error": "bad name"}, status_code=400)
+    data = body.get("dataurl", "")
+    if not data.startswith("data:image/png;base64,"):
+        return JSONResponse({"error": "expected png dataurl"}, status_code=400)
+    out = ROOT / "docs" / "media" / f"{name}.png"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    out.write_bytes(base64.b64decode(data.split(",", 1)[1]))
+    return {"ok": True, "path": str(out.relative_to(ROOT)), "bytes": out.stat().st_size}
+
+
 @app.get("/api/history")
 def history():
     """All verdicts ever, newest first — feeds the whiteboard tally and corkboard."""
