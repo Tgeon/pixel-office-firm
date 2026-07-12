@@ -106,6 +106,19 @@ def scoreboard():
     return out
 
 
+@app.get("/api/report/{ticker}/{agent}")
+def agent_report(ticker: str, agent: str):
+    d = REPORTS / ticker.upper()
+    files = sorted(d.glob(f"*-{agent.lower()}.md")) if d.exists() else []
+    if agent.lower() == "theo":
+        files = sorted(d.glob("*-verdict.md")) if d.exists() else []
+    if not files:
+        return JSONResponse({"error": "no report yet"}, status_code=404)
+    f = files[-1]
+    return {"date": f.name[:10], "path": str(f.relative_to(ROOT)),
+            "markdown": f.read_text()}
+
+
 MACRO_STRIP = {"TOTALSA": "VEHICLE SALES (SAAR M)", "FEDFUNDS": "FED FUNDS %",
                "AISRSA": "INV/SALES RATIO", "UMCSENT": "CONSUMER SENTIMENT"}
 

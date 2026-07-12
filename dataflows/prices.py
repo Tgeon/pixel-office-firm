@@ -74,7 +74,8 @@ def history(a) -> dict:
     return {
         "md": report(f"{t} price history ({a.period})", header + "\n" + md_table(rows), "yfinance"),
         "data": {"last_close": float(last["Close"]), "period_return_pct": float(period_ret),
-                 "rsi14": float(last["RSI14"]), "rows": rows},
+                 "rsi14": float(last["RSI14"]), "rows": rows,
+                 "closes": [round(float(v), 2) for v in close.tail(90)]},
     }
 
 

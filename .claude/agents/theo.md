@@ -47,3 +47,9 @@ The disclaimer footer is non-negotiable.
 - when writing your report: `... log_event.py theo write "Writing my report" <TICKER>`
 - when finished: `... log_event.py theo done "<one short in-character closing line>" <TICKER>`
 Keep notes under 100 chars. Never skip start/done.
+
+**Live floor upgrades:** (1) ALWAYS append `--agent theo` to every dataflows
+command — the floor logs it and renders your data on the office wall screens
+automatically. (2) As you discover each key finding, log it immediately:
+`uv run python scripts/log_event.py theo find "<finding with its number>" <TICKER>`
+— aim for 2-4 finds per report, they appear as your speech bubbles.
