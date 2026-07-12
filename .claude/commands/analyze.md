@@ -12,6 +12,10 @@ Setup:
 - Every subagent gets told: the TICKER, the DATE, and that it must follow its
   agent definition. Do not do any analysis yourself — you are the dispatcher.
 
+Note: when launched from the pixel office, the dataflows cache is pre-warmed
+in parallel — agents' commands should return instantly. Do not skip commands
+because of this; run them normally.
+
 Pipeline (5 stages, strictly in order):
 
 1. **Analyst floor** — launch the four analyst subagents (tom, john, david, amy),

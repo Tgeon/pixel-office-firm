@@ -70,7 +70,23 @@
   #tip { position:fixed; z-index:60; background:#fffef0; color:#111; border:2px solid #222;
          font-size:11px; padding:4px 8px; pointer-events:none; display:none; max-width:280px; }
 
-  #macro, #score, #tape, #console { flex-shrink:0; }
+  #macro, #score, #tape, #console, #stages { flex-shrink:0; }
+  #stages { display:none; gap:4px; padding:2px 10px 6px; }
+  #stages.on { display:flex; }
+  .stage { flex:1; text-align:center; font-size:10px; letter-spacing:1px;
+           padding:4px 0 3px; border:2px solid var(--edge); color:#5d5478;
+           background:var(--card); }
+  .stage.active { border-color:var(--gold); color:var(--gold);
+                  animation:pulse 1.2s infinite; }
+  .stage.done { border-color:var(--green); color:var(--green); }
+  @keyframes pulse { 50% { background:#1d1830; } }
+  #toast { position:fixed; top:52px; right:14px; z-index:120; display:flex;
+           flex-direction:column; gap:6px; }
+  .toast-msg { background:#2a1216; border:2px solid var(--red); color:#f0b9b9;
+               padding:8px 12px; font-size:12px; max-width:360px;
+               animation:fadein .3s; }
+  .toast-msg.warn { background:#2a2412; border-color:var(--gold); color:#e8d9a8; }
+  @keyframes fadein { from { opacity:0; transform:translateY(-6px); } }
   #console { height:86px; margin:6px 10px 0; padding:6px 8px; overflow-y:auto;
              font-size:10.5px; line-height:1.5; }
   #console .l { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
@@ -102,6 +118,8 @@
   <div id="status">floor idle</div>
 </div>
 <div id="macro"></div>
+<div id="stages"></div>
+<div id="toast"></div>
 <div id="main">
   <div id="digest" class="card"><h2>MORNING DIGEST</h2><p class="hint">no digest yet — hit ☼ RUN DIGEST</p></div>
   <div id="floor-wrap"><canvas id="floor"></canvas></div>
@@ -290,6 +308,25 @@ function shade(hex,amt){ const n=parseInt(hex.slice(1),16), f=v=>Math.min(255,Ma
 (function frame(){ drawFloor(); for(const n in AGENTS) drawAgent(n);
   requestAnimationFrame(frame); })();
 
+/* ============================ stages + toasts ============================ */
+const STAGES=['ANALYSTS','BULL','BEAR','REBUTTAL','VERDICT'];
+let stageIdx=-1, stageStart=0, hairyDone=false;
+const stagesEl=document.getElementById('stages');
+function setStage(i){ if(i<=stageIdx&&i!==0) return; stageIdx=i; stageStart=Date.now(); renderStages(); }
+function renderStages(){
+  if(stageIdx<0||!runTicker){ stagesEl.classList.remove('on'); return; }
+  stagesEl.classList.add('on');
+  stagesEl.innerHTML=STAGES.map((s,i)=>{
+    const cls=i<stageIdx?'done':i===stageIdx?'active':'';
+    const el=i===stageIdx?` ${Math.floor((Date.now()-stageStart)/1000)}s`:i<stageIdx?' ✓':'';
+    return `<div class="stage ${cls}">${s}${el}</div>`; }).join('');
+}
+setInterval(()=>{ if(stageIdx>=0&&runTicker) renderStages(); },1000);
+function toast(msg,warn){ const d=document.createElement('div');
+  d.className='toast-msg'+(warn?' warn':''); d.textContent=msg;
+  document.getElementById('toast').appendChild(d);
+  setTimeout(()=>d.remove(),9000); }
+
 /* ============================ events ============================ */
 const statusEl=document.getElementById('status'), consoleEl=document.getElementById('console');
 function clog(e){
@@ -309,13 +346,17 @@ es.onmessage=(m)=>{ let e; try{ e=JSON.parse(m.data);}catch{return;}
     clog(e);
     if(e.state==='run_start'){ runTicker=e.ticker; setBusy(true);
       screens.chart=null; screens.headlines=[]; screens.sentiment=null;
+      stageIdx=-1; hairyDone=false;
+      if(e.ticker!=='DIGEST') setStage(0);
       for(const n in AGENTS){ const a=AGENTS[n];
         a.mode='idle'; a.note=''; a.history=[]; a.path=[DESK[n]]; } }
+    if(e.state==='stall'){ toast('⚠ '+e.note, true); statusEl.textContent=e.note; }
+    if(e.state==='error'){ toast('✕ '+(e.note||'run failed')); }
     if(e.state==='run_done'||e.state==='error'){ setBusy(false);
       statusEl.textContent=e.state==='run_done'?'run complete':'run failed';
       if(e.state==='run_done'){ if(e.ticker==='DIGEST') loadDigest();
-        else { showVerdict(e.ticker); loadScore(); } }
-      runTicker=null; }
+        else { showVerdict(e.ticker); loadScore(); toast('✓ '+e.ticker+' verdict is in', true); } }
+      runTicker=null; stageIdx=-1; renderStages(); }
     return; }
   if(!(e.agent in AGENTS)) return;
   const a=AGENTS[e.agent];
@@ -327,8 +368,12 @@ es.onmessage=(m)=>{ let e; try{ e=JSON.parse(m.data);}catch{return;}
     if(p.kind==='quote') screens.quote=p.value;
     return; }
   const mode={start:'work',work:'work',find:'work',write:'write',done:'done',error:'idle'}[e.state]||'idle';
-  if(e.state==='start'){ a.startTs=e.ts; choreo(e.agent,'start'); }
-  if(e.state==='done') choreo(e.agent,'done');
+  if(e.state==='start'){ a.startTs=e.ts; choreo(e.agent,'start');
+    if(e.agent==='baldy') setStage(hairyDone?3:1);
+    if(e.agent==='hairy') setStage(2);
+    if(e.agent==='theo'&&runTicker!=='DIGEST') setStage(4); }
+  if(e.state==='done'){ choreo(e.agent,'done');
+    if(e.agent==='hairy') hairyDone=true; }
   a.mode=mode; a.note=e.note||''; a.ts=e.ts;
   statusEl.textContent=e.agent.toUpperCase()+': '+(e.note||e.state);
   if(dossierAgent===e.agent) renderDossier(e.agent);

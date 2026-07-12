@@ -64,6 +64,66 @@ def _spawn(prompt: str, label: str) -> subprocess.Popen:
     )
 
 
+PREFETCH = [
+    ["prices", "history", "{t}", "--period", "6mo"],
+    ["prices", "history", "{t}", "--period", "1y"],
+    ["prices", "fundamentals", "{t}"],
+    ["prices", "analyst", "{t}"],
+    ["finnhub", "quote", "{t}"],
+    ["finnhub", "news", "{t}"],
+    ["finnhub", "insider", "{t}"],
+    ["finnhub", "profile", "{t}"],
+    ["macro", "snapshot"],
+    ["news", "company", "{t}"],
+    ["news", "sector"],
+    ["social", "pulse", "{t}"],
+    ["recalls", "recalls", "{t}", "--years", "3"],
+    ["recalls", "complaints", "{t}", "--years", "2"],
+]
+
+
+def _prefetch(ticker: str) -> None:
+    """Warm the dataflows cache in parallel so agents get instant answers."""
+    from concurrent.futures import ThreadPoolExecutor
+    t0 = time.time()
+    _log("floor", "work", f"PREFETCH: warming {len(PREFETCH)} sources for {ticker}", ticker)
+
+    def one(args):
+        argv = [a.format(t=ticker) for a in args]
+        try:
+            subprocess.run([sys.executable, "-m", "dataflows", *argv],
+                           cwd=ROOT, capture_output=True, timeout=180)
+        except Exception:  # noqa: BLE001 — prefetch is best-effort
+            pass
+
+    with ThreadPoolExecutor(max_workers=6) as ex:
+        list(ex.map(one, PREFETCH))
+    _log("floor", "work", f"PREFETCH complete in {time.time()-t0:.0f}s — cache is hot", ticker)
+
+
+def _watchdog() -> None:
+    """Flag stalled runs: process alive but no telemetry for 3 minutes."""
+    warned_at = 0.0
+    while True:
+        time.sleep(30)
+        proc = _run.get("proc")
+        if not (proc and proc.poll() is None):
+            continue
+        try:
+            last = json.loads(EVENTS.read_text().splitlines()[-1])["ts"]
+        except Exception:  # noqa: BLE001
+            continue
+        quiet = time.time() - last
+        if quiet > 180 and time.time() - warned_at > 180:
+            warned_at = time.time()
+            _log("floor", "stall",
+                 f"no telemetry for {quiet/60:.0f}min — run may be stalled "
+                 f"(pid {proc.pid} still alive)", _run.get("ticker"))
+
+
+threading.Thread(target=_watchdog, daemon=True).start()
+
+
 @app.post("/api/analyze/{ticker}")
 def analyze(ticker: str):
     t = ticker.upper()
@@ -73,8 +133,13 @@ def analyze(ticker: str):
         return JSONResponse({"error": f"run already in progress ({_run['ticker']})"},
                             status_code=409)
     _log("floor", "run_start", f"Client requested analysis of {t}", t)
-    proc = _spawn(f"/analyze {t}", t)
+    try:
+        proc = _spawn(f"/analyze {t}", t)
+    except FileNotFoundError:
+        _log("floor", "error", "claude CLI not found on PATH — is Claude Code installed?", t)
+        return JSONResponse({"error": "claude CLI not found"}, status_code=500)
     _run.update(proc=proc, ticker=t, started=time.time())
+    threading.Thread(target=_prefetch, args=(t,), daemon=True).start()
     threading.Thread(target=_watch, args=(proc, t), daemon=True).start()
     return {"ok": True, "ticker": t}
 
@@ -85,7 +150,11 @@ def run_digest():
         return JSONResponse({"error": f"run already in progress ({_run['ticker']})"},
                             status_code=409)
     _log("floor", "run_start", "Theo is preparing the morning digest", "DIGEST")
-    proc = _spawn("/digest", "DIGEST")
+    try:
+        proc = _spawn("/digest", "DIGEST")
+    except FileNotFoundError:
+        _log("floor", "error", "claude CLI not found on PATH — is Claude Code installed?", "DIGEST")
+        return JSONResponse({"error": "claude CLI not found"}, status_code=500)
     _run.update(proc=proc, ticker="DIGEST", started=time.time())
     threading.Thread(target=_watch, args=(proc, "DIGEST"), daemon=True).start()
     return {"ok": True}
