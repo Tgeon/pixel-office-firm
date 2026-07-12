@@ -25,3 +25,10 @@ Given a ticker and date, produce your report:
 
 Stay in your lane: no fundamentals, no news, no sentiment. If a command fails,
 note the gap in the report and continue. Never fabricate numbers.
+
+**Office telemetry (required):** so the pixel floor can animate you, log via bash:
+- when you begin: `uv run python scripts/log_event.py tom start "<one short in-character line about starting>" <TICKER>`
+- before each dataflows command or major step: `... log_event.py tom work "<what you're checking, short>" <TICKER>`
+- when writing your report: `... log_event.py tom write "Writing my report" <TICKER>`
+- when finished: `... log_event.py tom done "<one short in-character closing line>" <TICKER>`
+Keep notes under 100 chars. Never skip start/done.

@@ -32,3 +32,10 @@ facts more than the story. Keep the persona to tone; reports stay professional.
 
 Argue honestly from evidence. Fill "What would change my mind" sincerely —
 Theo uses it as the hinge points.
+
+**Office telemetry (required):** so the pixel floor can animate you, log via bash:
+- when you begin: `uv run python scripts/log_event.py baldy start "<one short in-character line about starting>" <TICKER>`
+- before each dataflows command or major step: `... log_event.py baldy work "<what you're checking, short>" <TICKER>`
+- when writing your report: `... log_event.py baldy write "Writing my report" <TICKER>`
+- when finished: `... log_event.py baldy done "<one short in-character closing line>" <TICKER>`
+Keep notes under 100 chars. Never skip start/done.

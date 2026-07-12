@@ -10,7 +10,7 @@ Build order: scaffold → dataflows → report contract → agents → digest �
 - ✅ Step 4: the firm is hired — 7 subagents in .claude/agents/ (analysts on haiku, researchers+Theo on sonnet) + the `/analyze TICKER` command (.claude/commands/analyze.md) running the full pipeline: 4 analysts parallel → Baldy case → Hairy case+rebuttal → Baldy rebuttal → Theo verdict
 - ✅ Step 5: daily digest — `/digest` command (Theo in digest mode) + scripts/digest_data.py (cheap gatherer: batch prices, headlines, StockTwits arrows, last-verdict ages, macro pair). Manual each morning per decision 4.1.
 - 🔜 **Next: first live runs** — `/analyze RIVN` then `/digest` in Claude Code, watch in Pixel Agents, review output quality, tune prompts
-- 🔜 Step 6: pixel office scene tuning
+- ✅ Step 6 (pivoted per client request): **custom localhost trading floor** replaces the Pixel Agents extension as the primary UI — `office/server.py` (FastAPI, SSE) + `office/static/index.html` (canvas floor). Launch: `scripts/run_office.command` or `uv run uvicorn office.server:app --port 8787`. ANALYZE button spawns headless `claude -p "/analyze <T>"` (Agent SDK credit); agents animate via `data/events.jsonl` telemetry (logged per agent defs); ticker tape + verdict panel + speech bubbles in-world.
 - 🔜 Reddit Data API approval still pending — PRAW dormant in social.py, RSS fallback active
 - 🔜 Step 5: daily digest script · Step 6: Pixel Agents extension setup
 
