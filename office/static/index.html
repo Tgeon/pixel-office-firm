@@ -4,39 +4,69 @@
 <meta charset="utf-8">
 <title>Pixel Office Firm</title>
 <style>
-  :root { --bg:#17141f; --gold:#e8c56a; --green:#4caf6e; --red:#e05555; }
+  :root { --bg:#141020; --card:#0d0a15; --edge:#2c2440; --gold:#e8c56a;
+          --green:#4caf6e; --red:#e05555; --dim:#8d82a8; }
   * { box-sizing:border-box; margin:0; }
   body { background:var(--bg); color:#eee; font-family:"Courier New",monospace;
          display:flex; flex-direction:column; height:100vh; overflow:hidden; }
-  #bar { display:flex; align-items:center; gap:14px; padding:10px 16px;
-         background:#0d0b12; border-bottom:3px solid #2a2438; }
-  #bar h1 { font-size:17px; letter-spacing:3px; color:var(--gold); }
+  /* CRT overlay */
+  body::after { content:""; position:fixed; inset:0; pointer-events:none; z-index:99;
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.16) 0 1px, transparent 1px 3px); }
+  .card { background:var(--card); border:2px solid var(--edge); }
+
+  #bar { display:flex; align-items:center; gap:12px; padding:8px 14px;
+         background:#0a0812; border-bottom:3px solid var(--edge); }
+  #bar h1 { font-size:16px; letter-spacing:3px; color:var(--gold); }
   #bar h1 span { color:#8d79c9; }
   #ticker-in { background:#000; color:#fff; border:2px solid var(--gold);
-               font:inherit; font-size:15px; padding:6px 10px; width:110px;
+               font:inherit; font-size:14px; padding:5px 9px; width:96px;
                text-transform:uppercase; }
-  #go { background:var(--gold); color:#111; border:none; font:inherit;
-        font-weight:bold; font-size:14px; padding:8px 18px; cursor:pointer;
-        letter-spacing:2px; }
-  #go:disabled { background:#665c3d; cursor:wait; }
-  #status { font-size:12px; color:#9c92b8; margin-left:auto; }
-  #wrap { flex:1; display:flex; min-height:0; }
-  #floor { flex:1; display:block; image-rendering:pixelated; }
-  #panel { width:340px; background:#0d0b12; border-left:3px solid #2a2438;
-           padding:14px; overflow-y:auto; display:none; font-size:12.5px; }
-  #panel.show { display:block; }
-  #panel h2 { color:var(--gold); font-size:14px; letter-spacing:2px; margin-bottom:8px; }
-  .tier { display:inline-block; padding:2px 8px; margin:2px 4px 2px 0;
-          border:1px solid #555; font-weight:bold; }
+  button { font:inherit; font-weight:bold; font-size:13px; padding:7px 14px;
+           cursor:pointer; letter-spacing:1px; border:none; }
+  #go { background:var(--gold); color:#111; }
+  #digest-btn { background:#8d79c9; color:#111; }
+  button:disabled { opacity:.45; cursor:wait; }
+  #status { font-size:11.5px; color:var(--dim); margin-left:auto; max-width:420px;
+            white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+
+  #macro { display:flex; gap:8px; padding:8px 10px; }
+  .m-card { flex:1; padding:7px 10px; display:flex; align-items:center; gap:10px; }
+  .m-card .lab { font-size:10px; color:var(--dim); letter-spacing:1px; }
+  .m-card .val { font-size:17px; color:var(--gold); font-weight:bold; }
+  .m-card canvas { margin-left:auto; }
+
+  #main { flex:1; display:flex; gap:8px; padding:0 10px; min-height:0; }
+  #digest { width:295px; padding:10px; overflow-y:auto; font-size:11.5px; }
+  #digest h2 { color:var(--gold); font-size:12px; letter-spacing:2px; margin-bottom:6px; }
+  #digest h3 { color:#8d79c9; font-size:11px; margin:10px 0 4px; letter-spacing:1px; }
+  #digest p, #digest li { color:#c9c2dd; line-height:1.5; margin:4px 0; }
+  #digest table { border-collapse:collapse; width:100%; font-size:10px; margin:4px 0; }
+  #digest td, #digest th { border:1px solid var(--edge); padding:2px 4px; text-align:left; }
+  #digest .stale { color:#6d6486; font-style:italic; }
+  #floor-wrap { flex:1; display:flex; flex-direction:column; min-width:0; }
+  #floor { flex:1; width:100%; min-height:0; display:block; image-rendering:pixelated; }
+  #verdict { width:295px; padding:10px; overflow-y:auto; font-size:11.5px; }
+  #verdict h2 { color:var(--gold); font-size:12px; letter-spacing:2px; margin-bottom:8px; }
+  .tier { display:inline-block; padding:2px 7px; margin:2px 4px 2px 0;
+          border:1px solid #555; font-weight:bold; font-size:11px; }
   .tier.positive,.tier.strong_positive { color:var(--green); border-color:var(--green); }
   .tier.negative,.tier.strong_negative { color:var(--red); border-color:var(--red); }
   .tier.neutral { color:var(--gold); border-color:var(--gold); }
-  #panel li { margin:8px 0 8px 16px; color:#c9c2dd; line-height:1.45; }
-  #panel .path { color:#7a90c9; word-break:break-all; margin-top:10px; }
-  #tape { background:#000; border-top:3px solid #2a2438; padding:7px 0;
-          white-space:nowrap; overflow:hidden; font-size:13px; }
-  #tape-inner { display:inline-block; padding-left:100%;
-                animation:scroll 40s linear infinite; }
+  #verdict li { margin:7px 0 7px 14px; color:#c9c2dd; line-height:1.45; }
+  #verdict .path { color:#7a90c9; word-break:break-all; margin-top:8px; font-size:10px; }
+  .hint { color:#6d6486; font-style:italic; }
+
+  #score { display:grid; grid-template-columns:repeat(12,1fr); gap:6px; padding:8px 10px; }
+  .s-cell { padding:5px 4px 4px; text-align:center; cursor:pointer; }
+  .s-cell:hover { border-color:var(--gold); }
+  .s-cell .t { font-weight:bold; font-size:12px; }
+  .s-cell .p { font-size:10.5px; }
+  .s-cell .v { height:5px; margin-top:4px; background:#333; }
+  .s-cell .age { font-size:9px; color:var(--dim); }
+
+  #tape { background:#000; border-top:3px solid var(--edge); padding:6px 0;
+          white-space:nowrap; overflow:hidden; font-size:12.5px; }
+  #tape-inner { display:inline-block; padding-left:100%; animation:scroll 45s linear infinite; }
   @keyframes scroll { to { transform:translateX(-100%); } }
   .up { color:var(--green); } .down { color:var(--red); } .flat { color:#999; }
 </style>
@@ -44,165 +74,241 @@
 <body>
 <div id="bar">
   <h1>PIXEL OFFICE FIRM <span>&#9670;</span></h1>
-  <input id="ticker-in" placeholder="RIVN" maxlength="5">
+  <input id="ticker-in" placeholder="TSLA" maxlength="5">
   <button id="go">&#9654; ANALYZE</button>
+  <button id="digest-btn">&#9788; RUN DIGEST</button>
   <div id="status">floor idle</div>
 </div>
-<div id="wrap">
-  <canvas id="floor" width="980" height="600"></canvas>
-  <div id="panel"></div>
+<div id="macro"></div>
+<div id="main">
+  <div id="digest" class="card"><h2>MORNING DIGEST</h2><p class="hint">no digest yet — hit ☼ RUN DIGEST</p></div>
+  <div id="floor-wrap"><canvas id="floor"></canvas></div>
+  <div id="verdict" class="card"><h2>VERDICT WALL</h2><p class="hint">run an analysis or click the scoreboard</p></div>
 </div>
-<div id="tape"><div id="tape-inner">loading tape…</div></div>
+<div id="score"></div>
+<div id="tape"><div id="tape-inner">warming up the tape…</div></div>
 
 <script>
-const cv = document.getElementById('floor'), cx = cv.getContext('2d');
-const statusEl = document.getElementById('status');
-const AGENTS = {
-  tom:   {x:150, y:210, c:'#5bc0eb', role:'TECHNICALS'},
-  john:  {x:150, y:400, c:'#8ee06e', role:'FUNDAMENTALS'},
-  david: {x:390, y:210, c:'#f2d052', role:'NEWS & MACRO'},
-  amy:   {x:390, y:400, c:'#d977d9', role:'SENTIMENT'},
-  baldy: {x:700, y:190, c:'#f0a35e', role:'BULL'},
-  hairy: {x:880, y:190, c:'#c96a6a', role:'BEAR'},
-  theo:  {x:790, y:470, c:'#b9a3f5', role:'REPRESENTATIVE'},
-};
-const state = {};   // agent -> {mode, note, ts}
-for (const a in AGENTS) state[a] = {mode:'idle', note:'', ts:0};
-let runTicker = null;
+/* ============================== floor ============================== */
+const W=980, H=560;
+const cv=document.getElementById('floor'), cx=cv.getContext('2d');
+function fit(){ const r=cv.parentElement.getBoundingClientRect();
+  cv.width=W; cv.height=H; cv.style.width=r.width+'px';
+  cv.style.height=Math.max(r.height,300)+'px'; }
+window.addEventListener('resize',fit); setTimeout(fit,50);
 
-function px(n){ return Math.round(n); }
+const AGENTS={
+  tom:  {x:135,y:190,c:'#5bc0eb',role:'TECHNICALS'},
+  john: {x:135,y:388,c:'#8ee06e',role:'FUNDAMENTALS'},
+  david:{x:365,y:190,c:'#f2d052',role:'NEWS & MACRO'},
+  amy:  {x:365,y:388,c:'#d977d9',role:'SENTIMENT'},
+  baldy:{x:672,y:170,c:'#f0a35e',role:'BULL'},
+  hairy:{x:898,y:170,c:'#c96a6a',role:'BEAR'},
+  theo: {x:785,y:455,c:'#b9a3f5',role:'REPRESENTATIVE'},
+};
+const state={}; for(const a in AGENTS) state[a]={mode:'idle',note:'',ts:0};
+let runTicker=null;
+
+function rect(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(x,y,w,h); }
+function plant(x,y){ rect(x,y+12,16,12,'#7a4a2a'); rect(x+2,y-2,4,16,'#3f7d3f');
+  rect(x+7,y-6,4,20,'#4f9d4f'); rect(x+12,y,4,14,'#3f7d3f'); }
+function clock(x,y){ cx.fillStyle='#ddd'; cx.beginPath(); cx.arc(x,y,11,0,7); cx.fill();
+  cx.strokeStyle='#222'; cx.lineWidth=2; cx.stroke();
+  const d=new Date(), a1=(d.getHours()%12+d.getMinutes()/60)*Math.PI/6-Math.PI/2,
+        a2=d.getMinutes()*Math.PI/30-Math.PI/2;
+  cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x+Math.cos(a1)*5,y+Math.sin(a1)*5); cx.stroke();
+  cx.beginPath(); cx.moveTo(x,y); cx.lineTo(x+Math.cos(a2)*8,y+Math.sin(a2)*8); cx.stroke(); }
+function wallChart(x,y,w,h,seed){ rect(x,y,w,h,'#0b0b12');
+  cx.strokeStyle='#232338'; cx.strokeRect(x,y,w,h);
+  for(let i=0;i<12;i++){ const v=4+((Math.sin(seed+i*1.7)+1)/2)*(h-10);
+    rect(x+4+i*((w-8)/12), y+h-4-v, (w-8)/14, v, (Math.sin(seed+i*1.7)>0)?'#3f9d5f':'#b04848'); } }
+
 function drawFloor(){
-  cx.clearRect(0,0,cv.width,cv.height);
-  // rooms
-  cx.fillStyle='#8a6642'; cx.fillRect(20,60,540,510);           // analyst floor
-  cx.fillStyle='#7a5a3a';
-  for(let x=20;x<560;x+=40) cx.fillRect(x,60,4,510);            // planks
-  cx.fillStyle='#4a5b8c'; cx.fillRect(590,60,370,260);          // debate room
-  cx.fillStyle='#57456e'; cx.fillRect(590,350,370,220);         // theo's office
-  cx.strokeStyle='#141021'; cx.lineWidth=6;
-  [[20,60,540,510],[590,60,370,260],[590,350,370,220]].forEach(r=>cx.strokeRect(...r));
-  // labels
-  cx.fillStyle='#e8c56a'; cx.font='bold 13px Courier New'; cx.textAlign='left';
-  cx.fillText('ANALYST FLOOR',36,84); cx.fillText('RESEARCH DEBATE',606,84);
-  cx.fillText('CLIENT ROOM',606,374);
-  // debate table
-  cx.fillStyle='#6b4b2a'; cx.beginPath();
-  cx.ellipse(790,215,85,42,0,0,7); cx.fill();
-  // status header
-  cx.fillStyle = runTicker ? '#4caf6e' : '#666';
-  cx.fillText(runTicker ? '● ANALYZING '+runTicker : '○ AWAITING CLIENT REQUEST', 36, 48);
+  cx.clearRect(0,0,W,H);
+  cx.fillStyle=runTicker?'#4caf6e':'#666'; cx.font='bold 13px Courier New'; cx.textAlign='left';
+  cx.fillText(runTicker ? '● ANALYZING '+runTicker : '○ AWAITING CLIENT REQUEST', 26, 38);
+  clock(555, 32);
+  // analyst floor
+  rect(16,52,520,492,'#8a6642');
+  cx.fillStyle='#7a5a3a'; for(let x=16;x<536;x+=38) cx.fillRect(x,52,4,492);
+  // debate room
+  rect(556,52,408,262,'#4a5b8c');
+  // client room, checkered
+  rect(556,330,408,214,'#57456e');
+  for(let x=0;x<13;x++) for(let y=0;y<3;y++)
+    if((x+y)%2===0) rect(560+x*31, 478+y*22, 31, 22, '#463758');
+  cx.strokeStyle='#100c1c'; cx.lineWidth=6;
+  [[16,52,520,492],[556,52,408,262],[556,330,408,214]].forEach(r=>cx.strokeRect(...r));
+  cx.fillStyle='#e8c56a'; cx.font='bold 12px Courier New';
+  cx.fillText('ANALYST FLOOR',30,72); cx.fillText('RESEARCH DEBATE',570,72);
+  cx.fillText('CLIENT ROOM',570,350);
+  wallChart(700,60,120,34,3); wallChart(836,60,120,34,8);       // debate room screens
+  wallChart(250,60,150,30,5);                                    // floor screen
+  cx.fillStyle='#6b4b2a'; cx.beginPath(); cx.ellipse(785,205,92,40,0,0,7); cx.fill();
+  cx.fillStyle='#54381e'; cx.beginPath(); cx.ellipse(785,200,92,40,0,0,7); cx.fill();
+  rect(748,190,26,16,'#fffef0'); rect(796,196,26,16,'#fffef0');  // papers on table
+  plant(26,58); plant(506,516); plant(566,286); plant(932,506);
 }
-function drawDesk(x,y){
-  cx.fillStyle='#5c3f24'; cx.fillRect(x-46,y-58,92,34);
-  cx.fillStyle='#cfd6e4'; cx.fillRect(x-16,y-54,32,20);   // monitor
-  cx.fillStyle='#233'; cx.fillRect(x-13,y-51,26,14);
+function drawDesk(x,y,t){
+  rect(x-50,y-56,100,32,'#5c3f24'); rect(x-50,y-26,6,10,'#40260f'); rect(x+44,y-26,6,10,'#40260f');
+  rect(x-40,y-52,30,18,'#cfd6e4'); rect(x-37,y-49,24,12,'#101d26');   // monitor 1
+  rect(x+8,y-52,30,18,'#cfd6e4'); rect(x+11,y-49,24,12,'#101d26');    // monitor 2
+  if((state[t]?.mode)==='work'||state[t]?.mode==='write'){             // screen flicker
+    cx.fillStyle=['#1f4','#2c5','#0e3'][Math.floor(Date.now()/300)%3];
+    cx.fillRect(x-35,y-47,8,2); cx.fillRect(x+13,y-45,12,2); }
+  rect(x-46,y-30,14,4,'#e9e2c8');                                     // papers
+  rect(x+40,y-34,7,8,'#b05555');                                      // mug
 }
 function drawAgent(name){
-  const a = AGENTS[name], s = state[name];
-  drawDesk(a.x,a.y);
-  // body
-  const glow = s.mode==='work'||s.mode==='write';
-  cx.save();
-  if (glow){ cx.shadowColor=a.c; cx.shadowBlur=18; }
-  cx.fillStyle = s.mode==='idle' ? shade(a.c,-45) : a.c;
-  cx.fillRect(a.x-13,a.y-18,26,26);
-  cx.fillRect(a.x-9,a.y-30,18,14);                        // head
+  const a=AGENTS[name], s=state[name];
+  const busy=s.mode==='work'||s.mode==='write';
+  const bob=busy ? Math.sin(Date.now()/180)*2 : 0;
+  drawDesk(a.x,a.y,name);
+  cx.save(); if(busy){ cx.shadowColor=a.c; cx.shadowBlur=16; }
+  const body=s.mode==='idle'?shade(a.c,-55):a.c;
+  rect(a.x-12,a.y-16+bob,24,24,body);                                  // body
+  rect(a.x-8,a.y-30+bob,16,15,body);                                   // head
+  rect(a.x-8,a.y-30+bob,16,4,shade(a.c,40));                           // hair/highlight
   cx.restore();
   cx.fillStyle='#111';
-  cx.fillRect(a.x-5,a.y-26,3,3); cx.fillRect(a.x+2,a.y-26,3,3);   // eyes
-  // done badge / typing dots
-  if (s.mode==='done'){ cx.fillStyle='#4caf6e'; cx.font='bold 15px Courier New';
-    cx.textAlign='center'; cx.fillText('✓', a.x+22, a.y-22); }
-  if (glow){ const n = Math.floor(Date.now()/350)%4;
-    cx.fillStyle='#fff'; cx.textAlign='center';
-    cx.fillText('.'.repeat(n||1), a.x, a.y-40); }
-  // name + role tags
+  cx.fillRect(a.x-5,a.y-24+bob,3,3); cx.fillRect(a.x+2,a.y-24+bob,3,3);
+  if(busy){ const h=Math.sin(Date.now()/120)>0?2:-2;                   // typing hands
+    rect(a.x-16,a.y-4+h,5,4,body); rect(a.x+11,a.y-4-h,5,4,body); }
+  if(s.mode==='done'){ cx.fillStyle='#4caf6e'; cx.font='bold 14px Courier New';
+    cx.textAlign='center'; cx.fillText('✓',a.x+24,a.y-20); }
   cx.textAlign='center'; cx.font='bold 12px Courier New';
-  cx.fillStyle='#fff'; cx.fillText(name.toUpperCase(), a.x, a.y+26);
+  cx.fillStyle='#fff'; cx.fillText(name.toUpperCase(),a.x,a.y+26);
   cx.font='10px Courier New';
-  cx.fillStyle='#000'; const w = cx.measureText(a.role).width+10;
-  cx.fillRect(a.x-w/2, a.y+31, w, 14);
-  cx.fillStyle=a.c; cx.fillText(a.role, a.x, a.y+41);
-  // speech bubble (12s lifetime)
-  if (s.note && Date.now()/1000 - s.ts < 12) bubble(a.x, a.y-66, s.note);
+  const w=cx.measureText(a.role).width+10;
+  rect(a.x-w/2,a.y+30,w,14,'#000');
+  cx.fillStyle=a.c; cx.fillText(a.role,a.x,a.y+40);
+  if(s.note && Date.now()/1000-s.ts<14) bubble(a.x,a.y-64,s.note);
 }
 function bubble(x,y,text){
-  const t = text.length>44 ? text.slice(0,43)+'…' : text;
+  const t=text.length>46?text.slice(0,45)+'…':text;
   cx.font='11px Courier New';
-  const w = cx.measureText(t).width+14;
-  const bx = Math.min(Math.max(x-w/2, 8), cv.width-w-8);
-  cx.fillStyle='#fffef0'; cx.fillRect(bx, y-16, w, 20);
-  cx.strokeStyle='#222'; cx.lineWidth=2; cx.strokeRect(bx, y-16, w, 20);
-  cx.fillStyle='#111'; cx.textAlign='left'; cx.fillText(t, bx+7, y-2);
+  const w=cx.measureText(t).width+14, bx=Math.min(Math.max(x-w/2,6),W-w-6);
+  rect(bx,y-16,w,20,'#fffef0');
+  cx.strokeStyle='#222'; cx.lineWidth=2; cx.strokeRect(bx,y-16,w,20);
+  cx.fillStyle='#222'; cx.beginPath();
+  cx.moveTo(x-4,y+4); cx.lineTo(x+4,y+4); cx.lineTo(x,y+9); cx.fill();
+  cx.fillStyle='#111'; cx.textAlign='left'; cx.fillText(t,bx+7,y-2);
 }
-function shade(hex,amt){
-  const n=parseInt(hex.slice(1),16);
-  const r=Math.max(0,(n>>16)+amt),g=Math.max(0,((n>>8)&255)+amt),b=Math.max(0,(n&255)+amt);
-  return `rgb(${r},${g},${b})`;
-}
-function frame(){ drawFloor(); for(const a in AGENTS) drawAgent(a); requestAnimationFrame(frame); }
-frame();
+function shade(hex,amt){ const n=parseInt(hex.slice(1),16);
+  const f=v=>Math.min(255,Math.max(0,v));
+  return `rgb(${f((n>>16)+amt)},${f(((n>>8)&255)+amt)},${f((n&255)+amt)})`; }
+(function frame(){ drawFloor(); for(const a in AGENTS) drawAgent(a);
+  requestAnimationFrame(frame); })();
 
-// ---- events (SSE)
-const es = new EventSource('/api/events');
-es.onmessage = (m)=>{
-  let e; try { e = JSON.parse(m.data); } catch { return; }
-  if (e.agent === 'floor'){
-    if (e.state==='run_start'){ runTicker = e.ticker; setBusy(true);
-      for(const a in AGENTS) state[a]={mode:'idle',note:'',ts:0}; hidePanel(); }
-    if (e.state==='run_done'||e.state==='error'){ setBusy(false);
-      if (e.state==='run_done') showVerdict(e.ticker);
-      statusEl.textContent = e.state==='run_done' ? 'run complete' : 'run failed';
-      runTicker = null; }
-    return;
-  }
-  if (!(e.agent in state)) return;
-  const mode = {start:'work', work:'work', write:'write', done:'done', error:'idle'}[e.state]||'idle';
-  state[e.agent] = {mode, note:e.note||'', ts:e.ts};
-  statusEl.textContent = e.agent.toUpperCase()+': '+(e.note||e.state);
+/* ============================== events ============================== */
+const statusEl=document.getElementById('status');
+const es=new EventSource('/api/events');
+es.onmessage=(m)=>{ let e; try{ e=JSON.parse(m.data); }catch{ return; }
+  if(e.agent==='floor'){
+    if(e.state==='run_start'){ runTicker=e.ticker; setBusy(true);
+      for(const a in AGENTS) state[a]={mode:'idle',note:'',ts:0}; }
+    if(e.state==='run_done'||e.state==='error'){ setBusy(false);
+      statusEl.textContent=e.state==='run_done'?'run complete':'run failed';
+      if(e.state==='run_done'){
+        if(e.ticker==='DIGEST') loadDigest(); else { showVerdict(e.ticker); loadScore(); } }
+      runTicker=null; }
+    return; }
+  if(!(e.agent in state)) return;
+  const mode={start:'work',work:'work',write:'write',done:'done',error:'idle'}[e.state]||'idle';
+  state[e.agent]={mode,note:e.note||'',ts:e.ts};
+  statusEl.textContent=e.agent.toUpperCase()+': '+(e.note||e.state);
 };
 
-// ---- analyze button
-const btn = document.getElementById('go'), input = document.getElementById('ticker-in');
-function setBusy(b){ btn.disabled=b; btn.textContent = b?'⏳ WORKING':'▶ ANALYZE'; }
-btn.onclick = async ()=>{
-  const t = input.value.trim().toUpperCase(); if(!t) return;
-  const r = await fetch('/api/analyze/'+t, {method:'POST'});
-  const d = await r.json();
-  if (d.error){ statusEl.textContent = d.error; return; }
-  setBusy(true);
-};
+/* ============================== controls ============================== */
+const btn=document.getElementById('go'), dbtn=document.getElementById('digest-btn'),
+      input=document.getElementById('ticker-in');
+function setBusy(b){ btn.disabled=b; dbtn.disabled=b;
+  btn.textContent=b?'⏳ WORKING':'▶ ANALYZE'; }
+btn.onclick=async()=>{ const t=input.value.trim().toUpperCase(); if(!t) return;
+  const r=await fetch('/api/analyze/'+t,{method:'POST'}); const d=await r.json();
+  if(d.error){ statusEl.textContent=d.error; return; } setBusy(true); };
+dbtn.onclick=async()=>{ const r=await fetch('/api/digest',{method:'POST'});
+  const d=await r.json(); if(d.error){ statusEl.textContent=d.error; return; } setBusy(true); };
 
-// ---- verdict panel
-const panel = document.getElementById('panel');
-function hidePanel(){ panel.classList.remove('show'); }
+/* ============================== digest panel ============================== */
+function mdToHtml(md){
+  return md.replace(/^---[\s\S]*?---\n/,'')
+    .replace(/^### (.*)$/gm,'<h3>$1</h3>').replace(/^## (.*)$/gm,'<h3>$1</h3>')
+    .replace(/^# (.*)$/gm,'<h2>$1</h2>')
+    .replace(/^\|(.+)\|$/gm,(r)=>'<tr>'+r.slice(1,-1).split('|').map(c=>'<td>'+c.trim()+'</td>').join('')+'</tr>')
+    .replace(/(<tr>[\s\S]+?<\/tr>)(?![\s\S]*?<tr>)/,'<table>$1</table>')
+    .replace(/<tr><td>-+<\/td>[\s\S]*?<\/tr>/g,'')
+    .replace(/\*\*(.+?)\*\*/g,'<b>$1</b>').replace(/\*(.+?)\*/g,'<i>$1</i>')
+    .replace(/^- (.*)$/gm,'<li>$1</li>')
+    .replace(/^(?!<)(.+)$/gm,'<p>$1</p>').replace(/<p>\s*<\/p>/g,'');
+}
+async function loadDigest(){
+  const r=await fetch('/api/digest'); if(!r.ok) return;
+  const d=await r.json();
+  document.getElementById('digest').innerHTML=
+    '<h2>MORNING DIGEST — '+d.date+'</h2>'+mdToHtml(d.markdown);
+}
+loadDigest();
+
+/* ============================== verdict wall ============================== */
 async function showVerdict(t){
-  const r = await fetch('/api/verdict/'+t); if(!r.ok) return;
-  const v = await r.json();
-  panel.innerHTML = `<h2>${t} — FIRM VERDICT</h2>
+  const r=await fetch('/api/verdict/'+t); if(!r.ok) return;
+  const v=await r.json();
+  document.getElementById('verdict').innerHTML=`<h2>${t} — FIRM VERDICT</h2>
     <div><span class="tier ${v.stance}">OVERALL ${(v.stance||'').replace('_',' ').toUpperCase()}</span></div>
-    <div style="margin:8px 0">
+    <div style="margin:7px 0">
       <span class="tier ${v.financial_outlook}">FIN ${(v.financial_outlook||'?').replace('_',' ')}</span>
-      <span class="tier ${v.engineering_health}">ENG ${(v.engineering_health||'?').replace('_',' ')}</span>
-    </div>
-    <div>confidence: <b>${v.confidence}</b> &middot; horizon: ${v.horizon_months}mo &middot; ${v.date}</div>
-    <ul>${(v.key_findings||[]).map(k=>`<li>${k}</li>`).join('')}</ul>
+      <span class="tier ${v.engineering_health}">ENG ${(v.engineering_health||'?').replace('_',' ')}</span></div>
+    <div>confidence <b>${v.confidence}</b> &middot; ${v.horizon_months}mo &middot; ${v.date}</div>
+    <ul>${(v.key_findings||[]).map(k=>'<li>'+k+'</li>').join('')}</ul>
     <div class="path">${v.path}</div>`;
-  panel.classList.add('show');
 }
 
-// ---- ticker tape
+/* ============================== scoreboard ============================== */
+const TIERC={strong_positive:'#2e9e5b',positive:'#4caf6e',neutral:'#e8c56a',
+             negative:'#e05555',strong_negative:'#b03030'};
+async function loadScore(){
+  const r=await fetch('/api/scoreboard'); if(!r.ok) return;
+  const d=await r.json();
+  document.getElementById('score').innerHTML=Object.entries(d).map(([t,s])=>{
+    const pc=s.pct==null?'flat':s.pct>0.05?'up':s.pct<-0.05?'down':'flat';
+    const ps=s.pct==null?'—':(s.pct>0?'+':'')+s.pct.toFixed(1)+'%';
+    const vc=s.verdict?TIERC[s.verdict.tier]||'#333':'#333';
+    const age=s.verdict?s.verdict.age_days+'d':'unrated';
+    return `<div class="s-cell card" onclick="showVerdict('${t}')">
+      <div class="t">${t}</div><div class="p ${pc}">${ps}</div>
+      <div class="v" style="background:${vc}"></div><div class="age">${age}</div></div>`;
+  }).join('');
+}
+loadScore(); setInterval(loadScore, 5*60*1000);
+
+/* ============================== macro strip ============================== */
+async function loadMacro(){
+  const r=await fetch('/api/macro'); if(!r.ok) return;
+  const d=await r.json();
+  const el=document.getElementById('macro');
+  el.innerHTML=Object.entries(d).map(([sid,m])=>
+    `<div class="m-card card"><div><div class="lab">${m.label}</div>
+     <div class="val">${m.error?'—':m.latest.toLocaleString()}</div></div>
+     <canvas id="spark-${sid}" width="90" height="30"></canvas></div>`).join('');
+  for(const [sid,m] of Object.entries(d)){ if(m.error||!m.series) continue;
+    const c=document.getElementById('spark-'+sid).getContext('2d');
+    const lo=Math.min(...m.series), hi=Math.max(...m.series)||1;
+    c.strokeStyle='#8d79c9'; c.lineWidth=2; c.beginPath();
+    m.series.forEach((v,i)=>{ const x=4+i*(82/(m.series.length-1)),
+      y=26-((v-lo)/((hi-lo)||1))*22; i?c.lineTo(x,y):c.moveTo(x,y); });
+    c.stroke(); }
+}
+loadMacro(); setInterval(loadMacro, 30*60*1000);
+
+/* ============================== tape ============================== */
 async function tape(){
-  try {
-    const r = await fetch('/api/tape'); const d = await r.json();
-    document.getElementById('tape-inner').innerHTML = Object.entries(d)
-      .map(([t,m])=>{
-        if (m.pct==null) return `<span class="flat">${t} ?</span>`;
-        const cls = m.pct>0.05?'up':m.pct<-0.05?'down':'flat';
-        const sign = m.pct>0?'+':'';
-        return `<span class="${cls}">&nbsp;&nbsp;${t} ${sign}${m.pct.toFixed(2)}%&nbsp;&nbsp;</span>`;
-      }).join('▪');
-  } catch { /* server warming up */ }
+  try{ const r=await fetch('/api/tape'); const d=await r.json();
+    document.getElementById('tape-inner').innerHTML=Object.entries(d).map(([t,m])=>{
+      if(m.pct==null) return `<span class="flat">${t} ?</span>`;
+      const cls=m.pct>0.05?'up':m.pct<-0.05?'down':'flat', s=m.pct>0?'+':'';
+      return `<span class="${cls}">&nbsp;&nbsp;${t} $${m.close} ${s}${m.pct.toFixed(2)}%&nbsp;&nbsp;</span>`;
+    }).join('▪'); }catch{}
 }
 tape(); setInterval(tape, 5*60*1000);
 </script>

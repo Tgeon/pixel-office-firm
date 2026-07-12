@@ -47,6 +47,14 @@ def config():
             "agents": ["tom", "john", "david", "amy", "baldy", "hairy", "theo"]}
 
 
+def _spawn(prompt: str, label: str) -> subprocess.Popen:
+    return subprocess.Popen(
+        ["claude", "-p", prompt, "--permission-mode", "acceptEdits",
+         "--allowedTools", ALLOWED_TOOLS],
+        cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+    )
+
+
 @app.post("/api/analyze/{ticker}")
 def analyze(ticker: str):
     t = ticker.upper()
@@ -56,14 +64,65 @@ def analyze(ticker: str):
         return JSONResponse({"error": f"run already in progress ({_run['ticker']})"},
                             status_code=409)
     _log("floor", "run_start", f"Client requested analysis of {t}", t)
-    proc = subprocess.Popen(
-        ["claude", "-p", f"/analyze {t}", "--permission-mode", "acceptEdits",
-         "--allowedTools", ALLOWED_TOOLS],
-        cwd=ROOT, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
-    )
+    proc = _spawn(f"/analyze {t}", t)
     _run.update(proc=proc, ticker=t, started=time.time())
     threading.Thread(target=_watch, args=(proc, t), daemon=True).start()
     return {"ok": True, "ticker": t}
+
+
+@app.post("/api/digest")
+def run_digest():
+    if _run["proc"] and _run["proc"].poll() is None:
+        return JSONResponse({"error": f"run already in progress ({_run['ticker']})"},
+                            status_code=409)
+    _log("floor", "run_start", "Theo is preparing the morning digest", "DIGEST")
+    proc = _spawn("/digest", "DIGEST")
+    _run.update(proc=proc, ticker="DIGEST", started=time.time())
+    threading.Thread(target=_watch, args=(proc, "DIGEST"), daemon=True).start()
+    return {"ok": True}
+
+
+@app.get("/api/digest")
+def latest_digest():
+    d = ROOT / "digest"
+    files = sorted(d.glob("2*.md")) if d.exists() else []
+    if not files:
+        return JSONResponse({"error": "no digest yet"}, status_code=404)
+    f = files[-1]
+    return {"date": f.stem, "markdown": f.read_text()}
+
+
+@app.get("/api/scoreboard")
+def scoreboard():
+    from scripts.digest_data import latest_verdict, price_moves
+    try:
+        moves = price_moves()
+    except Exception:  # noqa: BLE001
+        moves = {}
+    out = {}
+    for t, u in UNIVERSE.items():
+        out[t] = {"name": u["short"], "pct": (moves.get(t) or {}).get("pct"),
+                  "verdict": latest_verdict(t)}
+    return out
+
+
+MACRO_STRIP = {"TOTALSA": "VEHICLE SALES (SAAR M)", "FEDFUNDS": "FED FUNDS %",
+               "AISRSA": "INV/SALES RATIO", "UMCSENT": "CONSUMER SENTIMENT"}
+
+
+@app.get("/api/macro")
+def macro_strip():
+    from dataflows.macro import _observations
+    out = {}
+    for sid, label in MACRO_STRIP.items():
+        try:
+            obs = _observations(sid, limit=13)[::-1]  # oldest→newest
+            out[sid] = {"label": label, "latest": float(obs[-1]["value"]),
+                        "date": obs[-1]["date"],
+                        "series": [float(o["value"]) for o in obs]}
+        except Exception as e:  # noqa: BLE001
+            out[sid] = {"label": label, "error": str(e)[:60]}
+    return out
 
 
 def _watch(proc: subprocess.Popen, ticker: str) -> None:
