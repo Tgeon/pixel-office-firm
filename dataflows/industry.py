@@ -17,10 +17,10 @@ OICA_FILES = {
     "sales_region": "https://raw.githubusercontent.com/jhelvy/oica/main/data-raw/sales_region.csv",
 }
 
-# IEA Global EV Data Explorer public API (CSV). If this URL drifts, download
-# manually from https://www.iea.org/data-and-statistics/data-tools/global-ev-data-explorer
-# and save as data/static/iea_ev.csv
-IEA_EV_URL = "https://api.iea.org/evs?parameters=EV%20sales&category=Historical&mode=Cars&csv=true"
+# EV sales (IEA Global EV Outlook data, mirrored by Our World in Data —
+# stable public CSV; the IEA API itself is gated). Schema:
+# Entity, Code, Year, Electric cars sold
+IEA_EV_URL = "https://ourworldindata.org/grapher/electric-car-sales.csv"
 
 
 def _path(name: str):
@@ -82,18 +82,20 @@ def sales(a) -> dict:
 
 
 def evs(a) -> dict:
-    df = _load("iea_ev")
-    # IEA explorer CSV: region/parameter/mode/powertrain/year/value (names can drift)
-    cols = {c.lower(): c for c in df.columns}
-    region_c = cols.get("region", cols.get("region_country", list(df.columns)[0]))
-    year_c, value_c = cols.get("year", "year"), cols.get("value", "value")
-    latest = int(df[year_c].max())
-    recent = df[df[year_c] >= latest - 4]
-    pivot = recent.pivot_table(index=year_c, columns=region_c, values=value_c, aggfunc="sum")
-    keep = [c for c in ("World", "China", "Europe", "USA") if c in pivot.columns] or list(pivot.columns)[:5]
-    rows = [dict({"Year": int(y)}, **{c: f"{v:,.0f}" for c, v in r[keep].items() if pd.notna(v)})
+    df = _load("iea_ev")  # OWID mirror: Entity, Code, Year, Electric cars sold
+    value_c = "Electric cars sold"
+    latest = int(df["Year"].max())
+    recent = df[df["Year"] >= latest - 5]
+    keep = ["World", "China", "Europe", "United States", "India"]
+    pivot = (recent[recent["Entity"].isin(keep)]
+             .pivot_table(index="Year", columns="Entity", values=value_c, aggfunc="sum"))
+    rows = [dict({"Year": int(y)}, **{c: f"{v:,.0f}" for c, v in r.items() if pd.notna(v)})
             for y, r in pivot.iterrows()]
-    return {"md": report("EV sales by region (IEA)", md_table(rows), "IEA Global EV Data Explorer"),
+    yoy = pivot["World"].pct_change().iloc[-1] * 100 if "World" in pivot else 0
+    body = (f"World EV sales {latest}: **{pivot['World'].iloc[-1]:,.0f}** "
+            f"({yoy:+.0f}% YoY)\n\n" + md_table(rows))
+    return {"md": report("EV sales by region (IEA via OWID)", body,
+                         "IEA Global EV Outlook, mirrored by Our World in Data"),
             "data": rows}
 
 
