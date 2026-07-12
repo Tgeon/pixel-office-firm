@@ -38,7 +38,16 @@ _run: dict = {"proc": None, "ticker": None, "started": None}
 
 @app.get("/")
 def index():
-    return FileResponse(ROOT / "office" / "static" / "index.html")
+    return FileResponse(ROOT / "office" / "static" / "index.html",
+                        headers={"Cache-Control": "no-store"})
+
+
+@app.get("/version")
+def version():
+    p = ROOT / "office" / "static" / "index.html"
+    txt = p.read_text()
+    return {"bytes": len(txt), "has_console": "activity console" in txt,
+            "mtime": p.stat().st_mtime}
 
 
 @app.get("/api/config")
@@ -177,14 +186,24 @@ async def events():
     return StreamingResponse(stream(), media_type="text/event-stream")
 
 
+_tape_cache: dict = {"ts": 0, "data": None}
+
+
 @app.get("/api/tape")
 def tape():
+    # server-side 10-min cache: multiple panels/tabs poll this; without it
+    # yfinance gets burst-called and starts returning "possibly delisted"
+    if _tape_cache["data"] and time.time() - _tape_cache["ts"] < 600:
+        return _tape_cache["data"]
     from scripts.digest_data import price_moves
     try:
         moves = price_moves()
     except Exception as e:  # noqa: BLE001
         return JSONResponse({"error": str(e)[:100]}, status_code=502)
-    return {t: {"name": UNIVERSE[t]["short"], **m} for t, m in moves.items()}
+    out = {t: {"name": UNIVERSE[t]["short"], **m} for t, m in moves.items()}
+    if any(m.get("pct") is not None for m in moves.values()):
+        _tape_cache.update(ts=time.time(), data=out)
+    return out
 
 
 @app.get("/api/verdict/{ticker}")

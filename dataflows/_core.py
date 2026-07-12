@@ -79,7 +79,7 @@ def company(ticker: str) -> dict:
 
 def _db() -> sqlite3.Connection:
     DATA_DIR.mkdir(exist_ok=True)
-    conn = sqlite3.connect(CACHE_DB)
+    conn = sqlite3.connect(CACHE_DB, timeout=15)  # tolerate concurrent server threads
     conn.execute("CREATE TABLE IF NOT EXISTS cache (key TEXT PRIMARY KEY, ts REAL, payload TEXT)")
     return conn
 
