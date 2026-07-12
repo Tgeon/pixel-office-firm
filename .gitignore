@@ -19,4 +19,5 @@ __pycache__/
 
 # OS / editor
 .DS_Store
-.vscode/settings.json
+# .vscode is intentionally committed: shared settings, tasks, and
+# recommended extensions make the project one-click for visitors

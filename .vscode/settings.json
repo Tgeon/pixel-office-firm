@@ -1,0 +1,19 @@
+{
+  // Keep the explorer clean for visitors — generated stuff stays invisible
+  "files.exclude": {
+    "**/__pycache__": true,
+    "**/.pytest_cache": true,
+    ".venv": true,
+    "data/cache.db": true,
+    "**/.DS_Store": true
+  },
+  "search.exclude": {
+    ".venv": true,
+    "uv.lock": true,
+    "data": true
+  },
+  "python.defaultInterpreterPath": "${workspaceFolder}/.venv/bin/python",
+  "files.trimTrailingWhitespace": true,
+  "editor.rulers": [100],
+  "explorer.sortOrder": "type"
+}

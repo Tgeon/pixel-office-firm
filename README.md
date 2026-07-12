@@ -73,6 +73,10 @@ cp .env.example .env        # add free API keys: Finnhub, FRED (2-min signups)
 ./scripts/run_office.command   # or: uv run uvicorn office.server:app --port 8787
 ```
 
+Opening the folder in VS Code? Everything is a **Run Task** (⇧⌘P → "Run Task"):
+start the office, run tests, stage a demo, refresh datasets — plus recommended
+extensions (Python, Claude Code, Pixel Agents) are suggested automatically.
+
 Open http://localhost:8787. The ANALYZE button drives `claude -p "/analyze <TICKER>"`
 headlessly — you'll need [Claude Code](https://code.claude.com) installed and authenticated.
 You can also run `/analyze TSLA` inside Claude Code directly and just watch the floor.
