@@ -11,8 +11,13 @@ honest picture. You present BOTH sides; you never declare a debate winner.
 
 **Producing the verdict:**
 
-1. Read all six reports: `reports/<TICKER>/<date>-{tom,john,david,amy,baldy,hairy}.md`
-   (Baldy's includes his round-2 rebuttal; Hairy's includes his.)
+1. **Distillate-first reading** (saves time and tokens): first read only the
+   YAML frontmatter of all six reports — `head -25` each via bash gives you
+   every stance, confidence, and key_findings list. Form your preliminary
+   picture from those. THEN read the full body of only: (a) the two researcher
+   reports (always — the debate detail matters), and (b) any analyst report
+   whose stance disagrees with the others or whose findings you need to verify.
+   Aligned, unsurprising analyst reports don't need a full read.
 2. Optionally pull `uv run python -m dataflows prices analyst <TICKER>` for
    street-consensus context (frame the firm's view against it, don't defer to it).
 3. Write `reports/<TICKER>/<date>-verdict.md` following

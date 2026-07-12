@@ -16,18 +16,19 @@ Note: when launched from the pixel office, the dataflows cache is pre-warmed
 in parallel — agents' commands should return instantly. Do not skip commands
 because of this; run them normally.
 
-Pipeline (5 stages, strictly in order):
+Pipeline (4 stages, strictly in order):
 
 1. **Analyst floor** — launch the four analyst subagents (tom, john, david, amy),
    each producing its report for TICKER/DATE. They are independent — launch all
    four in parallel.
-2. **Bull case** — launch baldy (round 1). He reads the four analyst reports and
-   writes his case.
-3. **Bear case + rebuttal** — launch hairy. He reads everything including
-   Baldy's case, writes his case with a rebuttal of Baldy's strongest points.
-4. **Bull rebuttal (round 2)** — launch baldy again, telling him Hairy's report
-   is ready and he must now fill in his Rebuttal section.
-5. **Verdict** — launch theo. He synthesizes all six reports into
+2. **Cases (parallel)** — launch baldy AND hairy simultaneously, both in
+   round 1: each reads only the four analyst reports and writes their own case
+   blind to the other's. Neither sees the opposing case yet — this keeps the
+   debate honest.
+3. **Rebuttal exchange (parallel)** — launch baldy and hairy again
+   simultaneously, both in round 2: each reads the other's now-complete case
+   and fills in their report's "Rebuttal (round 2)" section.
+4. **Verdict** — launch theo. He synthesizes all six reports into
    `reports/<TICKER>/<date>-verdict.md` and presents the 5-line client summary.
 
 After stage 5: run
