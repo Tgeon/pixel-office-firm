@@ -260,9 +260,9 @@ const PROPS={
   baldy(x,y){ rect(x-90,y-54,22,40,'#5c3f24'); rect(x-88,y-52,18,2,'#3d2c1c');
     ['#b05555','#5b8ac4','#d9b25f'].forEach((c,i)=>rect(x-87+i*6,y-50,5,12,c));
     ['#6ea56e','#8a6bb0','#c4864a'].forEach((c,i)=>rect(x-87+i*6,y-34,5,12,c)); },
-  hairy(x,y){ rect(x+68,y-54,22,40,'#5c3f24'); rect(x+70,y-52,18,2,'#3d2c1c');
-    ['#4a6a8a','#a06a3a','#9a4a4a'].forEach((c,i)=>rect(x+71+i*6,y-50,5,12,c));
-    ['#777788','#4a8a6a','#b0975b'].forEach((c,i)=>rect(x+71+i*6,y-34,5,12,c)); },
+  hairy(x,y){ rect(x-90,y-54,22,40,'#5c3f24'); rect(x-88,y-52,18,2,'#3d2c1c');
+    ['#4a6a8a','#a06a3a','#9a4a4a'].forEach((c,i)=>rect(x-87+i*6,y-50,5,12,c));
+    ['#777788','#4a8a6a','#b0975b'].forEach((c,i)=>rect(x-87+i*6,y-34,5,12,c)); },
   theo(x,y){ rect(x+56,y-60,30,8,'#5c3f24');                             // award shelf
     rect(x+66,y-70,8,10,'#f0d080'); rect(x+68,y-73,4,3,'#f0d080');
     rect(x+64,y-59,12,2,'#c9a04d'); },
@@ -434,9 +434,13 @@ function clog(e){
 }
 const es=new EventSource('/api/events');
 es.onmessage=(m)=>{ let e; try{ e=JSON.parse(m.data);}catch{return;}
+  const fresh=Date.now()/1000-e.ts<45;   // replayed history animates, never toasts
   if(e.agent!=='floor') clog(e);
   if(e.agent==='floor'){
     clog(e);
+    if(!fresh){ if(e.state==='run_start') runTicker=e.ticker;
+      if(e.state==='run_done'||e.state==='error') runTicker=null;
+      return; }
     if(e.state==='run_start'){ runTicker=e.ticker; setBusy(true);
       screens.chart=null; screens.headlines=[]; screens.sentiment=null;
       stageIdx=-1; hairyDone=false;
@@ -533,7 +537,8 @@ function mdToHtml(md){
 async function loadDigest(){ const r=await fetch('/api/digest'); if(!r.ok) return;
   const d=await r.json();
   document.getElementById('digest').innerHTML=
-    '<h2>MORNING DIGEST — '+d.date+'</h2>'+mdToHtml(d.markdown); }
+    '<h2>MORNING DIGEST — '+d.date+'</h2>'
+    +mdToHtml(d.markdown).replace(/<h2>.*?<\/h2>/,''); }
 loadDigest();
 async function showVerdict(t){ const r=await fetch('/api/verdict/'+t); if(!r.ok) return;
   const v=await r.json();
