@@ -183,7 +183,18 @@ setInterval(()=>{ if(runTicker) return;
 }, 22000);
 
 /* ============================ drawing ============================ */
+const SPRITE=new Image(); SPRITE.src='/assets/agents.png';
+const SPRITE_COL={tom:0,john:1,david:2,amy:3,baldy:4,hairy:5,theo:6};
+cx.imageSmoothingEnabled=false;
 function rect(x,y,w,h,c){ cx.fillStyle=c; cx.fillRect(x,y,w,h); }
+function shadow(x,y,rx,ry){ cx.fillStyle='rgba(20,10,5,.30)';
+  cx.beginPath(); cx.ellipse(x,y,rx,ry,0,0,7); cx.fill(); }
+function lightPool(x,y,r){ const g=cx.createRadialGradient(x,y,4,x,y,r);
+  g.addColorStop(0,'rgba(255,205,130,.14)'); g.addColorStop(1,'rgba(255,205,130,0)');
+  cx.fillStyle=g; cx.fillRect(x-r,y-r,r*2,r*2); }
+function vignette(){ const g=cx.createRadialGradient(W/2,H/2,H/3,W/2,H/2,H*0.95);
+  g.addColorStop(0,'rgba(0,0,0,0)'); g.addColorStop(1,'rgba(8,4,16,.42)');
+  cx.fillStyle=g; cx.fillRect(0,0,W,H); }
 function plant(x,y){ rect(x,y+12,16,12,'#7a4a2a'); rect(x+2,y-2,4,16,'#3f7d3f');
   rect(x+7,y-6,4,20,'#4f9d4f'); rect(x+12,y,4,14,'#3f7d3f'); }
 function clock(x,y){ cx.fillStyle='#ddd'; cx.beginPath(); cx.arc(x,y,11,0,7); cx.fill();
@@ -234,32 +245,51 @@ function sentScreen(x,y,w,h){                           // Amy's sentiment bars
 
 function drawFloor(){
   cx.clearRect(0,0,W,H);
-  cx.fillStyle=runTicker?'#4caf6e':'#666'; cx.font='bold 13px Courier New'; cx.textAlign='left';
+  cx.fillStyle=runTicker?'#4caf6e':'#8d82a8'; cx.font='bold 13px Courier New'; cx.textAlign='left';
   cx.fillText(runTicker?'● ANALYZING '+runTicker:'○ AWAITING CLIENT REQUEST',26,38);
   clock(555,32);
-  rect(16,52,520,492,'#8a6642');
-  cx.fillStyle='#7a5a3a'; for(let x=16;x<536;x+=38) cx.fillRect(x,52,4,492);
-  rect(556,52,408,262,'#4a5b8c');
-  rect(556,330,408,214,'#57456e');
+  // analyst floor: wall band + warm planks
+  rect(16,52,520,24,'#5f4630'); rect(16,74,520,3,'#3d2c1c');
+  rect(16,77,520,467,'#9b7a52');
+  cx.fillStyle='#8a6b45'; for(let x=16;x<536;x+=38) cx.fillRect(x,77,4,467);
+  cx.fillStyle='#a9885e'; for(let x=35;x<536;x+=76) cx.fillRect(x,77,2,467);
+  // debate room
+  rect(556,52,408,24,'#3c4a75'); rect(556,74,408,3,'#252f4d');
+  rect(556,77,408,237,'#55679c');
+  // client room + checkered corner
+  rect(556,330,408,22,'#473763'); rect(556,350,408,3,'#2e2342');
+  rect(556,353,408,191,'#66528a');
   for(let x=0;x<13;x++) for(let y=0;y<3;y++)
-    if((x+y)%2===0) rect(560+x*31,478+y*22,31,22,'#463758');
+    if((x+y)%2===0) rect(560+x*31,478+y*22,31,22,'#57456e');
+  // rugs
+  cx.fillStyle='#465a8e'; cx.beginPath(); cx.ellipse(785,215,150,72,0,0,7); cx.fill();
+  cx.fillStyle='#755f9c'; cx.beginPath(); cx.ellipse(785,468,120,44,0,0,7); cx.fill();
   cx.strokeStyle='#100c1c'; cx.lineWidth=6;
   [[16,52,520,492],[556,52,408,262],[556,330,408,214]].forEach(r=>cx.strokeRect(...r));
   cx.fillStyle='#e8c56a'; cx.font='bold 12px Courier New'; cx.textAlign='left';
-  cx.fillText('ANALYST FLOOR',30,72); cx.fillText('RESEARCH DEBATE',570,72);
-  cx.fillText('CLIENT ROOM',570,350);
-  bigScreen(190,58,180,42);                 // real chart
-  newsScreen(650,336,300,26);               // headlines in client room wall
-  sentScreen(836,60,120,40);                // sentiment in debate room
-  bigScreen(700,60,120,40);                 // second debate screen mirrors chart
+  cx.fillText('ANALYST FLOOR',30,69); cx.fillText('RESEARCH DEBATE',570,69);
+  cx.fillText('CLIENT ROOM',570,347);
+  bigScreen(190,56,180,44);                 // real chart on the wall band
+  newsScreen(650,332,300,24);               // headlines in client room
+  sentScreen(836,56,120,44);                // sentiment in debate room
+  bigScreen(700,56,120,44);                 // second debate screen mirrors chart
+  // debate table with shadow
+  shadow(785,242,96,16);
   cx.fillStyle='#6b4b2a'; cx.beginPath(); cx.ellipse(785,205,92,40,0,0,7); cx.fill();
   cx.fillStyle='#54381e'; cx.beginPath(); cx.ellipse(785,200,92,40,0,0,7); cx.fill();
   rect(748,190,26,16,'#fffef0'); rect(796,196,26,16,'#fffef0');
+  shadow(34,84,12,4); shadow(514,542,12,4); shadow(574,312,12,4); shadow(940,532,12,4);
   plant(26,58); plant(506,516); plant(566,286); plant(932,506);
+  shadow(COFFEE[0],COFFEE[1]+6,14,4); shadow(COOLER[0],COOLER[1]+6,11,4);
   coffeeMachine(COFFEE[0],COFFEE[1]); cooler(COOLER[0],COOLER[1]);
+  // warm lamp pools over the desks
+  for(const n in DESK) lightPool(DESK[n][0],DESK[n][1]-10,68);
+  lightPool(785,205,90);
 }
 function drawDesk(x,y,busy){
-  rect(x-50,y-56,100,32,'#5c3f24'); rect(x-50,y-26,6,10,'#40260f'); rect(x+44,y-26,6,10,'#40260f');
+  shadow(x,y-20,52,8);
+  rect(x-50,y-56,100,32,'#6d4a29'); rect(x-50,y-27,100,3,'#4a3018');
+  rect(x-50,y-26,6,10,'#40260f'); rect(x+44,y-26,6,10,'#40260f');
   rect(x-40,y-52,30,18,'#cfd6e4'); rect(x-37,y-49,24,12,'#101d26');
   rect(x+8,y-52,30,18,'#cfd6e4'); rect(x+11,y-49,24,12,'#101d26');
   if(busy){ cx.fillStyle=['#1f4','#2c5','#0e3'][Math.floor(Date.now()/300)%3];
@@ -269,22 +299,23 @@ function drawDesk(x,y,busy){
 function drawAgent(n){
   const a=AGENTS[n];
   const busy=a.mode==='work'||a.mode==='write';
-  const bob=busy?Math.sin(Date.now()/180)*2:0;
+  const bob=busy?Math.sin(Date.now()/180)*1.6:0;
   const away=Math.hypot(a.x-DESK[n][0],a.y-DESK[n][1])>6;
-  if(!away) drawDesk(DESK[n][0],DESK[n][1],busy);
-  else drawDesk(DESK[n][0],DESK[n][1],false);
-  cx.save(); if(busy){ cx.shadowColor=a.c; cx.shadowBlur=16; }
-  const body=a.mode==='idle'&&!a.walking?shade(a.c,-55):a.c;
-  const legs=a.walking?Math.sin(Date.now()/90)*3:0;
-  rect(a.x-12,a.y-16+bob,24,24,body);
-  rect(a.x-9,a.y+8,8,6+legs,shade(a.c,-30)); rect(a.x+2,a.y+8,8,6-legs,shade(a.c,-30));
-  rect(a.x-8,a.y-30+bob,16,15,body); rect(a.x-8,a.y-30+bob,16,4,shade(a.c,40));
+  drawDesk(DESK[n][0],DESK[n][1],busy&&!away);
+  shadow(a.x,a.y+15,15,5);
+  const frame=a.walking?Math.floor(Date.now()/150)%2:0;
+  cx.save();
+  if(busy){ cx.shadowColor=a.c; cx.shadowBlur=14; }
+  if(a.mode==='idle'&&!a.walking&&!runTicker) cx.globalAlpha=0.92;
+  if(SPRITE.complete&&SPRITE.naturalWidth)
+    cx.drawImage(SPRITE, SPRITE_COL[n]*16, frame*24, 16, 24,
+                 a.x-16, a.y-34+bob, 32, 48);
+  else rect(a.x-12,a.y-24+bob,24,38,a.c);   // pre-load fallback
   cx.restore();
-  cx.fillStyle='#111'; cx.fillRect(a.x-5,a.y-24+bob,3,3); cx.fillRect(a.x+2,a.y-24+bob,3,3);
-  if(busy&&!away){ const h=Math.sin(Date.now()/120)>0?2:-2;
-    rect(a.x-16,a.y-4+h,5,4,body); rect(a.x+11,a.y-4-h,5,4,body); }
+  if(busy&&!away){ const h=Math.sin(Date.now()/120)>0?2:-2;   // typing hands
+    rect(a.x-17,a.y-2+h,5,4,'#eec3a0'); rect(a.x+12,a.y-2-h,5,4,'#eec3a0'); }
   if(a.mode==='done'){ cx.fillStyle='#4caf6e'; cx.font='bold 14px Courier New';
-    cx.textAlign='center'; cx.fillText('✓',a.x+24,a.y-20); }
+    cx.textAlign='center'; cx.fillText('✓',a.x+24,a.y-24); }
   cx.textAlign='center'; cx.font='bold 12px Courier New';
   cx.fillStyle='#fff'; cx.fillText(n.toUpperCase(),a.x,a.y+26);
   cx.font='10px Courier New';
@@ -306,7 +337,7 @@ function bubble(x,y,text){
 function shade(hex,amt){ const n=parseInt(hex.slice(1),16), f=v=>Math.min(255,Math.max(0,v));
   return `rgb(${f((n>>16)+amt)},${f(((n>>8)&255)+amt)},${f((n&255)+amt)})`; }
 (function frame(){ drawFloor(); for(const n in AGENTS) drawAgent(n);
-  requestAnimationFrame(frame); })();
+  vignette(); requestAnimationFrame(frame); })();
 
 /* ============================ stages + toasts ============================ */
 const STAGES=['ANALYSTS','BULL','BEAR','REBUTTAL','VERDICT'];

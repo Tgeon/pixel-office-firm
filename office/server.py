@@ -21,6 +21,7 @@ from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -33,6 +34,8 @@ ALLOWED_TOOLS = ("Task,Read,Write,Edit,Glob,Grep,"
                  "Bash(uv run*),Bash(mkdir*),Bash(ls*),Bash(cat*),Bash(date*)")
 
 app = FastAPI(title="pixel-office-firm")
+app.mount("/assets", StaticFiles(directory=ROOT / "office" / "static" / "assets"),
+          name="assets")
 _run: dict = {"proc": None, "ticker": None, "started": None}
 
 
