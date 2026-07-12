@@ -7,7 +7,9 @@ Build order: scaffold → dataflows → report contract → agents → digest �
 - ✅ Step 1: repo scaffold, GitHub remote (Tgeon/pixel-office-firm), keys in .env (Finnhub, FRED; Reddit pending Data API approval — PRAW path is dormant in social.py until then)
 - ✅ Step 2: dataflows layer — 8 modules, unified CLI, 12 mocked tests, **live smoke test 18/18 PASS**
 - ✅ Step 3: report contract — spec in docs/report-contract.md, templates in reports/_templates/, validator at scripts/validate_report.py (agents must self-validate: `uv run python scripts/validate_report.py <report>`)
-- 🔜 **Step 4 (next): the 7 subagent definitions in .claude/agents/** — each agent def should: name its dataflows commands, require the report template + contract, and end by running the validator on its own output. Stubs listed in .claude/agents/README.md
+- ✅ Step 4: the firm is hired — 7 subagents in .claude/agents/ (analysts on haiku, researchers+Theo on sonnet) + the `/analyze TICKER` command (.claude/commands/analyze.md) running the full pipeline: 4 analysts parallel → Baldy case → Hairy case+rebuttal → Baldy rebuttal → Theo verdict
+- 🔜 **Next: first live run** — `/analyze RIVN` in Claude Code, watch it in Pixel Agents, review report quality, tune agent prompts
+- 🔜 Step 5: daily digest script · Step 6: pixel office scene tuning
 - 🔜 Reddit Data API approval still pending — PRAW dormant in social.py, RSS fallback active
 - 🔜 Step 5: daily digest script · Step 6: Pixel Agents extension setup
 
