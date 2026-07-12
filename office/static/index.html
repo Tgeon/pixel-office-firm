@@ -3,40 +3,53 @@
 <head>
 <meta charset="utf-8">
 <title>Pixel Office Firm</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
 <style>
-  :root { --bg:#141020; --card:#0d0a15; --edge:#2c2440; --gold:#e8c56a;
-          --green:#4caf6e; --red:#e05555; --dim:#8d82a8; }
+  :root { --bg:#0d0a14; --s1:#120e1c; --card:#161022; --s3:#201936;
+          --edge:#332a4a; --gold:#e2bd6b; --brass:linear-gradient(180deg,#f0d080,#c9a04d);
+          --green:#46c47c; --red:#e05a5a; --dim:#857a9e;
+          --px:"Press Start 2P","Courier New",monospace;
+          --mono:"JetBrains Mono","Courier New",monospace; }
   * { box-sizing:border-box; margin:0; }
-  body { background:var(--bg); color:#eee; font-family:"Courier New",monospace;
+  body { background:var(--bg); color:#e6e0f2; font-family:var(--mono); font-size:12px;
          display:flex; flex-direction:column; height:100vh; overflow:hidden; }
   body::after { content:""; position:fixed; inset:0; pointer-events:none; z-index:99;
-    background:repeating-linear-gradient(0deg, rgba(0,0,0,.15) 0 1px, transparent 1px 3px); }
-  .card { background:var(--card); border:2px solid var(--edge); }
+    background:repeating-linear-gradient(0deg, rgba(0,0,0,.09) 0 1px, transparent 1px 3px); }
+  .card { background:linear-gradient(180deg,var(--card),var(--s1));
+          border:2px solid var(--edge);
+          box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 3px 10px rgba(0,0,0,.45); }
 
-  #bar { display:flex; align-items:center; gap:12px; padding:8px 14px;
+  #bar { display:flex; align-items:center; gap:12px; padding:10px 14px;
          background:#0a0812; border-bottom:3px solid var(--edge); }
-  #bar h1 { font-size:16px; letter-spacing:3px; color:var(--gold); }
+  #bar h1 { font-family:var(--px); font-size:13px; letter-spacing:1px; color:var(--gold);
+            text-shadow:0 2px 0 rgba(0,0,0,.6); }
   #bar h1 span { color:#8d79c9; }
   #ticker-in { background:#000; color:#fff; border:2px solid var(--gold);
-               font:inherit; font-size:14px; padding:5px 9px; width:96px;
+               font-family:var(--px); font-size:11px; padding:7px 9px; width:104px;
                text-transform:uppercase; }
-  button { font:inherit; font-weight:bold; font-size:13px; padding:7px 14px;
-           cursor:pointer; letter-spacing:1px; border:none; }
-  #go { background:var(--gold); color:#111; }
-  #digest-btn { background:#8d79c9; color:#111; }
+  button { font-family:var(--px); font-size:10px; padding:9px 14px;
+           cursor:pointer; letter-spacing:0; border:none;
+           box-shadow:0 2px 0 rgba(0,0,0,.5); }
+  button:hover:not(:disabled) { filter:brightness(1.12); }
+  #go { background:var(--brass); color:#221a08; }
+  #digest-btn { background:linear-gradient(180deg,#a693dd,#7a63b8); color:#171028; }
   button:disabled { opacity:.45; cursor:wait; }
   #status { font-size:11.5px; color:var(--dim); margin-left:auto; max-width:420px;
             white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   #macro { display:flex; gap:8px; padding:8px 10px; }
   .m-card { flex:1; padding:6px 10px; display:flex; align-items:center; gap:10px; }
-  .m-card .lab { font-size:10px; color:var(--dim); letter-spacing:1px; }
+  .m-card .lab { font-family:var(--px); font-size:7px; color:var(--dim); }
   .m-card .val { font-size:16px; color:var(--gold); font-weight:bold; }
   .m-card canvas { margin-left:auto; }
 
   #main { flex:1; display:flex; gap:8px; padding:0 10px; min-height:0; position:relative; }
   #digest { width:290px; padding:10px; overflow-y:auto; font-size:11.5px; }
-  #digest h2, #verdict h2 { color:var(--gold); font-size:12px; letter-spacing:2px; margin-bottom:6px; }
+  #digest h2, #verdict h2 { color:var(--gold); font-family:var(--px); font-size:9px;
+    letter-spacing:0; margin-bottom:8px; padding-bottom:6px;
+    border-bottom:1px solid var(--edge); }
+  #digest h2::before { content:"☼ "; } #verdict h2::before { content:"◆ "; }
   #digest h3 { color:#8d79c9; font-size:11px; margin:10px 0 4px; letter-spacing:1px; }
   #digest p, #digest li { color:#c9c2dd; line-height:1.5; margin:4px 0; }
   #digest table { border-collapse:collapse; width:100%; font-size:10px; margin:4px 0; }
@@ -73,8 +86,8 @@
   #macro, #score, #tape, #console, #stages { flex-shrink:0; }
   #stages { display:none; gap:4px; padding:2px 10px 6px; }
   #stages.on { display:flex; }
-  .stage { flex:1; text-align:center; font-size:10px; letter-spacing:1px;
-           padding:4px 0 3px; border:2px solid var(--edge); color:#5d5478;
+  .stage { flex:1; text-align:center; font-family:var(--px); font-size:8px;
+           padding:5px 0 4px; border:2px solid var(--edge); color:#5d5478;
            background:var(--card); }
   .stage.active { border-color:var(--gold); color:var(--gold);
                   animation:pulse 1.2s infinite; }
@@ -95,9 +108,10 @@
   #console .t { color:#5d5478; }
 
   #score { display:grid; grid-template-columns:repeat(12,1fr); gap:6px; padding:8px 10px; }
-  .s-cell { padding:5px 4px 4px; text-align:center; cursor:pointer; }
-  .s-cell:hover { border-color:var(--gold); }
-  .s-cell .t { font-weight:bold; font-size:12px; }
+  .s-cell { padding:5px 4px 4px; text-align:center; cursor:pointer;
+            transition:box-shadow .15s, border-color .15s; }
+  .s-cell:hover { border-color:var(--gold); box-shadow:0 0 10px rgba(226,189,107,.35); }
+  .s-cell .t { font-family:var(--px); font-size:9px; }
   .s-cell .p { font-size:10.5px; }
   .s-cell .v { height:5px; margin-top:4px; background:#333; }
   .s-cell .age { font-size:9px; color:var(--dim); }
@@ -207,6 +221,52 @@ function coffeeMachine(x,y){ rect(x-10,y-22,20,26,'#333a45'); rect(x-6,y-18,12,8
   rect(x-4,y-6,8,6,'#b05555'); cx.fillStyle='#888'; cx.fillRect(x-10,y-26,20,4);
   if(Math.floor(Date.now()/600)%2) rect(x-1,y-32,2,5,'#aaa'); }        // steam
 function cooler(x,y){ rect(x-8,y-24,16,28,'#7fb2d9'); rect(x-6,y-30,12,8,'#a8d4f2'); }
+const F_PX='"Press Start 2P","Courier New",monospace';
+const F_MONO='"JetBrains Mono","Courier New",monospace';
+function skyPalette(){ const h=new Date().getHours()+new Date().getMinutes()/60;
+  if(h<5.5||h>=21) return {sky:'#0a1030',glow:'#1a2246',sun:null,night:true};
+  if(h<8)  return {sky:'#e8935c',glow:'#f6c07a',sun:'#ffe9b0',night:false};
+  if(h<17) return {sky:'#7ec3e8',glow:'#a5d8f2',sun:'#fff3c4',night:false};
+  if(h<20) return {sky:'#d97a4e',glow:'#f0a35e',sun:'#ffd9a0',night:false};
+  return {sky:'#20204a',glow:'#33305e',sun:null,night:true}; }
+function drawWindow(x,w){ const p=skyPalette(), y=55, h=18;
+  rect(x-2,y-2,w+4,h+4,'#3d2c1c');                      // frame
+  const g=cx.createLinearGradient(0,y,0,y+h);
+  g.addColorStop(0,p.sky); g.addColorStop(1,p.glow);
+  cx.fillStyle=g; cx.fillRect(x,y,w,h);
+  if(p.sun){ cx.fillStyle=p.sun; cx.fillRect(x+w-14,y+3,5,5); }
+  if(p.night){ cx.fillStyle='#fff';                     // stars
+    for(let i=0;i<5;i++) cx.fillRect(x+6+(i*w/5+((i*37)%7)),y+2+((i*13)%6),1,1); }
+  // skyline
+  cx.fillStyle=p.night?'#05050f':'#3a4a5a';
+  const hs=[7,10,5,12,8,6,11,9];
+  hs.forEach((bh,i)=>{ const bx=x+2+i*(w-4)/8; cx.fillRect(bx,y+h-bh,(w-4)/8-1,bh);
+    if(p.night){ cx.fillStyle='#ffd977';
+      cx.fillRect(bx+1,y+h-bh+2,1,1); cx.fillRect(bx+2,y+h-bh+5,1,1);
+      cx.fillStyle='#05050f'; } });
+  rect(x+w/2-1,y,2,h,'#3d2c1c');                        // mullion
+}
+const PROPS={
+  tom(x,y){ rect(x+52,y-50,20,16,'#cfd6e4'); rect(x+54,y-48,16,11,'#12333f');
+    if(Math.floor(Date.now()/400)%2) rect(x+56,y-45,6,2,'#2fd07a'); rect(x+58,y-34,8,3,'#4a3018'); },
+  john(x,y){ rect(x-76,y-54,18,30,'#8b93a5'); rect(x-74,y-48,14,2,'#5c6474');
+    rect(x-74,y-40,14,2,'#5c6474'); rect(x-74,y-32,14,2,'#5c6474');
+    rect(x+30,y-32,10,7,'#2a2e3c'); rect(x+31,y-31,8,2,'#9fe3b5'); },   // calculator
+  david(x,y){ rect(x+52,y-54,26,20,'#22242e');
+    cx.fillStyle=['#3b6ea5','#a53b52','#3ba56e'][Math.floor(Date.now()/500)%3];
+    cx.fillRect(x+54,y-52,22,14); rect(x+60,y-34,10,4,'#4a3018'); },
+  amy(x,y){ rect(x+34,y-34,8,8,'#7a4a2a'); rect(x+35,y-38,2,5,'#4f9d4f');
+    rect(x+38,y-37,2,4,'#3f7d3f'); rect(x-46,y-38,10,4,'#d95f8a'); },   // succulent + phone
+  baldy(x,y){ rect(x-90,y-54,22,40,'#5c3f24'); rect(x-88,y-52,18,2,'#3d2c1c');
+    ['#b05555','#5b8ac4','#d9b25f'].forEach((c,i)=>rect(x-87+i*6,y-50,5,12,c));
+    ['#6ea56e','#8a6bb0','#c4864a'].forEach((c,i)=>rect(x-87+i*6,y-34,5,12,c)); },
+  hairy(x,y){ rect(x+68,y-54,22,40,'#5c3f24'); rect(x+70,y-52,18,2,'#3d2c1c');
+    ['#4a6a8a','#a06a3a','#9a4a4a'].forEach((c,i)=>rect(x+71+i*6,y-50,5,12,c));
+    ['#777788','#4a8a6a','#b0975b'].forEach((c,i)=>rect(x+71+i*6,y-34,5,12,c)); },
+  theo(x,y){ rect(x+56,y-60,30,8,'#5c3f24');                             // award shelf
+    rect(x+66,y-70,8,10,'#f0d080'); rect(x+68,y-73,4,3,'#f0d080');
+    rect(x+64,y-59,12,2,'#c9a04d'); },
+};
 
 function bigScreen(x,y,w,h){                            // real chart from Tom's data
   rect(x,y,w,h,'#0b0b12'); cx.strokeStyle='#2c2440'; cx.strokeRect(x,y,w,h);
@@ -245,11 +305,12 @@ function sentScreen(x,y,w,h){                           // Amy's sentiment bars
 
 function drawFloor(){
   cx.clearRect(0,0,W,H);
-  cx.fillStyle=runTicker?'#4caf6e':'#8d82a8'; cx.font='bold 13px Courier New'; cx.textAlign='left';
+  cx.fillStyle=runTicker?'#46c47c':'#857a9e'; cx.font='9px '+F_PX; cx.textAlign='left';
   cx.fillText(runTicker?'● ANALYZING '+runTicker:'○ AWAITING CLIENT REQUEST',26,38);
   clock(555,32);
   // analyst floor: wall band + warm planks
   rect(16,52,520,24,'#5f4630'); rect(16,74,520,3,'#3d2c1c');
+  drawWindow(40,56); drawWindow(110,56); drawWindow(400,56); drawWindow(470,56);
   rect(16,77,520,467,'#9b7a52');
   cx.fillStyle='#8a6b45'; for(let x=16;x<536;x+=38) cx.fillRect(x,77,4,467);
   cx.fillStyle='#a9885e'; for(let x=35;x<536;x+=76) cx.fillRect(x,77,2,467);
@@ -266,8 +327,8 @@ function drawFloor(){
   cx.fillStyle='#755f9c'; cx.beginPath(); cx.ellipse(785,468,120,44,0,0,7); cx.fill();
   cx.strokeStyle='#100c1c'; cx.lineWidth=6;
   [[16,52,520,492],[556,52,408,262],[556,330,408,214]].forEach(r=>cx.strokeRect(...r));
-  cx.fillStyle='#e8c56a'; cx.font='bold 12px Courier New'; cx.textAlign='left';
-  cx.fillText('ANALYST FLOOR',30,69); cx.fillText('RESEARCH DEBATE',570,69);
+  cx.fillStyle='#e2bd6b'; cx.font='8px '+F_PX; cx.textAlign='left';
+  cx.fillText('ANALYST FLOOR',186,50); cx.fillText('RESEARCH DEBATE',570,69);
   cx.fillText('CLIENT ROOM',570,347);
   bigScreen(190,56,180,44);                 // real chart on the wall band
   newsScreen(650,332,300,24);               // headlines in client room
@@ -302,6 +363,7 @@ function drawAgent(n){
   const bob=busy?Math.sin(Date.now()/180)*1.6:0;
   const away=Math.hypot(a.x-DESK[n][0],a.y-DESK[n][1])>6;
   drawDesk(DESK[n][0],DESK[n][1],busy&&!away);
+  if(PROPS[n]) PROPS[n](DESK[n][0],DESK[n][1]);
   shadow(a.x,a.y+15,15,5);
   const frame=a.walking?Math.floor(Date.now()/150)%2:0;
   cx.save();
@@ -316,17 +378,17 @@ function drawAgent(n){
     rect(a.x-17,a.y-2+h,5,4,'#eec3a0'); rect(a.x+12,a.y-2-h,5,4,'#eec3a0'); }
   if(a.mode==='done'){ cx.fillStyle='#4caf6e'; cx.font='bold 14px Courier New';
     cx.textAlign='center'; cx.fillText('✓',a.x+24,a.y-24); }
-  cx.textAlign='center'; cx.font='bold 12px Courier New';
-  cx.fillStyle='#fff'; cx.fillText(n.toUpperCase(),a.x,a.y+26);
-  cx.font='10px Courier New';
+  cx.textAlign='center'; cx.font='8px '+F_PX;
+  cx.fillStyle='#fff'; cx.fillText(n.toUpperCase(),a.x,a.y+27);
+  cx.font='6px '+F_PX;
   const w=cx.measureText(AGENTS[n].role).width+10;
-  rect(a.x-w/2,a.y+30,w,14,'#000');
+  rect(a.x-w/2,a.y+31,w,13,'rgba(0,0,0,.85)');
   cx.fillStyle=a.c; cx.fillText(AGENTS[n].role,a.x,a.y+40);
   if(a.note&&Date.now()/1000-a.ts<14) bubble(a.x,a.y-64,a.note);
 }
 function bubble(x,y,text){
   const t=text.length>46?text.slice(0,45)+'…':text;
-  cx.font='11px Courier New';
+  cx.font='11px '+F_MONO;
   const w=cx.measureText(t).width+14, bx=Math.min(Math.max(x-w/2,6),W-w-6);
   rect(bx,y-16,w,20,'#fffef0');
   cx.strokeStyle='#222'; cx.lineWidth=2; cx.strokeRect(bx,y-16,w,20);
