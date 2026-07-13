@@ -1,55 +1,31 @@
 # Pixel Office Firm
 
-**A tiny AI consulting firm that analyzes automotive companies — and you get to watch it work.**
+A multi-agent LLM system that analyzes automotive companies, structured as a small
+consulting firm and visualized as a pixel-art office. Seven agents — four analysts, two
+researchers, and a representative — gather live market data, argue a bull-vs-bear debate,
+and produce a written verdict. The whole process renders in real time on a local web page:
+each agent has a desk, their data appears on the office wall screens, and their progress
+is streamed as speech bubbles and console lines.
 
-Seven LLM agents with names, desks, and opinions research real market data, debate bull-vs-bear,
-and file verdicts — all rendered live as a pixel-art trading floor in your browser.
-Built on the [TradingAgents](https://arxiv.org/abs/2412.20138) multi-agent framework,
-running on [Claude Code](https://code.claude.com) subagents, fed entirely by free data sources.
+The agent organization follows
+[TradingAgents: Multi-Agents LLM Financial Trading Framework](https://arxiv.org/abs/2412.20138)
+(Xiao, Sun, Luo, Wang), adapted from a trading desk into a consulting unit: instead of
+buy/sell signals, the output is a qualitative outlook with separate financial and
+engineering sub-scores.
 
-![Python 3.12](https://img.shields.io/badge/python-3.12-blue)
-![uv](https://img.shields.io/badge/deps-uv-6e40c9)
-![License: MIT](https://img.shields.io/badge/license-MIT-green)
-![Made with Claude Code](https://img.shields.io/badge/agents-Claude%20Code-d97757)
+![A run in progress — analysts finished, researchers building opposing cases](docs/media/mission-control.png)
 
-![The firm analyzing GM — analysts done, researchers building their cases](docs/media/mission-control.png)
+*A run in progress: the four analysts have filed their reports (✓), Baldy and Hairy are
+writing opposing cases in parallel, the wall screens show the actual price chart and
+sentiment data the agents just fetched, and the console logs each step.*
 
-*A live run: the analysts have filed (✓), Baldy and Hairy are building opposing cases in
-parallel, Tom's real price chart is on the wall screens, Amy's sentiment split fills the
-debate-room display, and the activity console narrates every step.*
+## How a run works
 
-## What is this?
-
-Type a ticker, press **▶ ANALYZE**, and the firm goes to work:
-
-1. **Four analysts** research in parallel — Tom (technicals), John (fundamentals & SEC filings),
-   David (news & macro), Amy (investor + enthusiast sentiment).
-2. **Two researchers** write opposing cases *blind to each other* — Baldy argues the bull case,
-   Hairy the bear — then exchange rebuttals.
-3. **Theo**, the client representative, synthesizes everything into a verdict:
-   a five-tier outlook (6–12 month horizon) with **two sub-scores** — Financial Outlook and
-   Engineering Health — plus an auditable confidence rubric.
-
-Every agent's work is real: they run CLI dataflows against live market APIs, log telemetry the
-office renders (speech bubbles, wall screens, walk paths), and write markdown reports that pass
-a schema validator. The office is the interface — the whiteboard tallies real bulls-vs-bears
-verdict history, the corkboard pins actual verdict cards.
-
-![The floor up close](docs/media/floor-live.png)
-
-## Why "Engineering Health"?
-
-Cars are hardware. Alongside the financial picture, the researchers weigh production trends
-(OICA), EV adoption (IEA), and **NHTSA recall/complaint patterns** — quality problems often
-precede financial ones. The firm's first engagement caught a recurring fastener-recall pattern
-across safety systems that pure price analysis would never see:
-[read the RIVN verdict](reports/RIVN/2026-07-11-verdict.md).
-
-## The pipeline
+Entering a ticker and pressing ANALYZE starts a pipeline with four stages:
 
 ```mermaid
 flowchart LR
-    A[▶ ANALYZE] --> P[Prefetch<br/>14 sources in parallel]
+    A[ANALYZE] --> P[Prefetch<br/>14 sources in parallel]
     A --> T1[Tom · technicals]
     A --> T2[John · fundamentals]
     A --> T3[David · news+macro]
@@ -57,47 +33,106 @@ flowchart LR
     T1 & T2 & T3 & T4 --> B[Baldy · bull case]
     T1 & T2 & T3 & T4 --> H[Hairy · bear case]
     B & H --> R[Rebuttal exchange]
-    R --> V[Theo · verdict<br/>FIN + ENG sub-scores]
+    R --> V[Theo · verdict]
 ```
 
-There's also **☼ RUN DIGEST** — Theo's morning pass over the whole 12-ticker universe:
-macro snapshot, top movers with narrative, and a nudge when a big move challenges a
-standing verdict.
+1. **Analysts (parallel).** Tom, John, David, and Amy each run a fixed set of data
+   commands and write a report covering only their own domain. In parallel, the server
+   pre-warms the data cache so agent commands return instantly.
+2. **Cases (parallel).** Baldy and Hairy read the four analyst reports and write opposing
+   research cases — deliberately blind to each other, so neither argument is shaped by
+   the other.
+3. **Rebuttal exchange.** Each researcher then reads the other's case and adds a rebuttal
+   section that quotes and counters the opponent's strongest points.
+4. **Verdict.** Theo reads the six reports (frontmatter first, full bodies where agents
+   disagree) and writes the verdict: a five-tier outlook over a 6–12 month horizon,
+   sub-scores for Financial Outlook and Engineering Health, both sides of the debate
+   presented, and a confidence level computed from a three-check rubric (data coverage,
+   agent agreement, evidence recency).
 
-## Quickstart
+There is also a **digest** mode: a cheap daily pass over all 12 covered tickers (price
+moves, headlines, sentiment, last-verdict ages) that Theo turns into a short morning
+briefing displayed in the left panel.
+
+The "Engineering Health" sub-score exists because cars are hardware: the researchers weigh
+production data (OICA), EV adoption (IEA), and NHTSA recall/complaint patterns alongside
+the financial picture. In the first real engagement this surfaced a recurring
+fastener-recall pattern across unrelated safety systems —
+[the RIVN verdict](reports/RIVN/2026-07-11-verdict.md) is included as a sample.
+
+![The floor up close](docs/media/floor-live.png)
+
+## How it's built
+
+The system has three layers:
+
+**Agents** are [Claude Code](https://code.claude.com) subagent definitions
+(`.claude/agents/*.md`) — a markdown file per agent containing its role, its data
+commands, its report requirements, and its model assignment (analysts run on a fast
+model, researchers and Theo on a stronger one). The pipeline itself is a Claude Code
+slash command (`.claude/commands/analyze.md`) that dispatches the subagents in order.
+The web UI launches runs headlessly via `claude -p "/analyze <TICKER>"`.
+
+**Dataflows** (`dataflows/`) is a plain Python layer: one module per data source, exposed
+through a single CLI (`python -m dataflows <module> <command> <ticker>`). Agents never
+call APIs directly — they run these commands via bash and read the markdown output.
+Responses are cached in SQLite with per-class TTLs (quotes 15 min, news 6 h, fundamentals
+7 d). Every source is free; three need API keys (Finnhub, FRED, Reddit).
+
+**The office** (`office/`) is a FastAPI server plus a single-file HTML5 canvas page.
+Agents log telemetry (start/work/finding/done events) to `data/events.jsonl` — partly
+automatic (every dataflows command logs itself when given `--agent`), partly explicit
+(agents log key findings as they discover them). The server tails this file over
+server-sent events, and the page animates it: desk activity, walk paths between rooms,
+speech bubbles, real fetched data on the wall screens, a stage progress bar, and an
+activity console. Some office decor is data-driven — the whiteboard tallies real
+bull/bear verdict history and the corkboard pins the last five verdict cards. The
+character spritesheet is generated by `scripts/make_sprites.py` (Pillow), so there are
+no external art assets.
+
+Reports follow a strict contract (`docs/report-contract.md`): YAML frontmatter with
+stance, confidence, key findings, and sources, validated by
+`scripts/validate_report.py`, which every agent runs on its own output. Design
+decisions made during development are recorded in `docs/pre-build-decisions.md`, and the
+full data-source research is in `docs/data-source-catalog.md`. The project was built
+iteratively with Claude (Cowork + Claude Code), which also explains the `CLAUDE.md`
+context file at the repo root.
+
+## Running it
 
 ```bash
 git clone https://github.com/Tgeon/pixel-office-firm && cd pixel-office-firm
 uv sync
-cp .env.example .env        # add free API keys: Finnhub, FRED (2-min signups)
+cp .env.example .env        # add free API keys: Finnhub, FRED (documented in the file)
 ./scripts/run_office.command   # or: uv run uvicorn office.server:app --port 8787
 ```
 
-Opening the folder in VS Code? Everything is a **Run Task** (⇧⌘P → "Run Task"):
-start the office, run tests, stage a demo, refresh datasets — plus recommended
-extensions (Python, Claude Code, Pixel Agents) are suggested automatically.
+Then open http://localhost:8787. Analysis runs require
+[Claude Code](https://code.claude.com) installed and authenticated; alternatively run
+`/analyze TSLA` inside Claude Code itself and use the page as a viewer.
 
-Open http://localhost:8787. The ANALYZE button drives `claude -p "/analyze <TICKER>"`
-headlessly — you'll need [Claude Code](https://code.claude.com) installed and authenticated.
-You can also run `/analyze TSLA` inside Claude Code directly and just watch the floor.
+Without API keys, the floor and ticker tape still work, and
+`uv run python scripts/demo_events.py` stages a scripted run so the animation can be
+seen without spending anything.
 
-No keys? The floor, ticker tape, and demo still work:
-`uv run python scripts/demo_events.py` stages a fake run so you can see the office move.
+In VS Code, common actions are available as Run Tasks (start the office, unit tests,
+live smoke test, demo, dataset refresh), and recommended extensions are suggested on open.
 
-## Repo map
+## Repository layout
 
 ```
-.claude/agents/    the seven firm agents (Claude Code subagent definitions)
+.claude/agents/    seven subagent definitions (the firm)
 .claude/commands/  /analyze and /digest pipeline commands
-dataflows/         one module per data source → unified CLI (see below)
-office/            FastAPI server + the canvas trading floor
-scripts/           smoke tests, report validator, sprite generator, demo
-reports/           real engagements (RIVN included as a sample)
+dataflows/         data-source modules + unified CLI
+office/            FastAPI server + canvas floor (office/static/index.html)
+scripts/           smoke test, report validator, sprite generator, demo events
+reports/           engagement outputs (RIVN kept as a sample)
 digest/            morning digests
 docs/              data-source catalog, decision record, report contract, media
+tests/             mocked unit tests (no network needed)
 ```
 
-## Data sources (all free)
+## Data sources
 
 | Source | Provides |
 |---|---|
@@ -107,17 +142,17 @@ docs/              data-source catalog, decision record, report contract, media
 | SEC EDGAR | XBRL financials, Form 4 insider filings |
 | Google News RSS + GDELT | headlines, macro events |
 | Reddit (RSS) + StockTwits | investor & enthusiast sentiment, VADER-scored |
-| NHTSA | recalls & complaints per make — engineering health |
+| NHTSA | recalls & complaints per make |
 | OICA + IEA (via OWID) | global production & EV adoption |
 
-Try the CLI directly: `uv run python -m dataflows finnhub quote TSLA`
+The CLI can be used standalone: `uv run python -m dataflows finnhub quote TSLA`
 
-## Credits
+## References
 
 - [TradingAgents: Multi-Agents LLM Financial Trading Framework](https://arxiv.org/abs/2412.20138)
-  (Xiao, Sun, Luo, Wang) — the firm's organizational blueprint
-- [Pixel Agents](https://github.com/pixel-agents-hq/pixel-agents) — inspiration for
-  watching agents work in a pixel office
+  (Xiao, Sun, Luo, Wang) — the agent organization this project adapts
+- [Pixel Agents](https://github.com/pixel-agents-hq/pixel-agents) — prior art for
+  visualizing coding agents as a pixel office, which inspired the visualization approach
 - Data: OICA via [jhelvy/oica](https://github.com/jhelvy/oica), IEA Global EV Outlook via
   [Our World in Data](https://ourworldindata.org/), NHTSA, FRED, SEC EDGAR
 
